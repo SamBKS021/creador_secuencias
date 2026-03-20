@@ -1,0 +1,658 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#d8dadd",
+              primary: "#002446",
+              "primary-fixed-dim": "#abc8f5",
+              "on-tertiary-container": "#c99a5f",
+              "on-background": "#191c1e",
+              "tertiary-fixed-dim": "#f0bd7f",
+              "on-primary-fixed": "#001c39",
+              "secondary-fixed-dim": "#afcbd8",
+              "tertiary-fixed": "#ffddb7",
+              "on-secondary-container": "#4e6874",
+              "on-primary-container": "#87a4cf",
+              "on-primary-fixed-variant": "#2a486e",
+              "secondary-fixed": "#cbe7f5",
+              "on-secondary-fixed-variant": "#304a55",
+              "surface-variant": "#e0e3e6",
+              surface: "#f7f9fc",
+              "surface-bright": "#f7f9fc",
+              "inverse-primary": "#abc8f5",
+              "on-secondary-fixed": "#021f29",
+              "inverse-on-surface": "#eff1f4",
+              "on-tertiary-fixed-variant": "#62400c",
+              "on-tertiary-fixed": "#2a1700",
+              "primary-fixed": "#d3e3ff",
+              "surface-container": "#eceef1",
+              "secondary-container": "#cbe7f5",
+              "on-secondary": "#ffffff",
+              secondary: "#48626e",
+              error: "#ba1a1a",
+              "primary-container": "#1a3a5f",
+              outline: "#73777f",
+              "surface-tint": "#426087",
+              "surface-container-highest": "#e0e3e6",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              background: "#f7f9fc",
+              "on-primary": "#ffffff",
+              "surface-container-low": "#f2f4f7",
+              "on-surface": "#191c1e",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#43474e",
+              "on-tertiary": "#ffffff",
+              "on-error-container": "#93000a",
+              "tertiary-container": "#523200",
+              "inverse-surface": "#2d3133",
+              tertiary: "#351f00",
+              "surface-container-high": "#e6e8eb",
+              "outline-variant": "#c3c6cf"
+            },
+            fontFamily: {
+              headline: ["Manrope"],
+              body: ["Inter"],
+              label: ["Inter"]
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              full: "0.75rem"
+            }
+          }
+        }
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body class="bg-surface font-body text-on-surface">
+    <!-- TopAppBar -->
+    <header
+      class="fixed top-0 w-full z-50 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md no-border bg-surface-container-low h-16 px-8 flex justify-between items-center"
+    >
+      <div class="flex items-center gap-8">
+        <span
+          class="text-lg font-bold tracking-widest uppercase text-blue-950 dark:text-blue-50 font-manrope"
+          >Centro Cristiano Palmas</span
+        >
+        <div class="hidden md:flex items-center gap-6">
+          <nav class="flex gap-6">
+            <a
+              class="text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 transition-colors font-manrope tracking-tight font-semibold"
+              href="#"
+              >Dashboard</a
+            >
+            <a
+              class="text-blue-900 dark:text-blue-100 font-bold hover:bg-blue-50/50 transition-colors font-manrope tracking-tight font-semibold"
+              href="#"
+              >Song Library</a
+            >
+            <a
+              class="text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 transition-colors font-manrope tracking-tight font-semibold"
+              href="#"
+              >Upload Center</a
+            >
+            <a
+              class="text-slate-500 dark:text-slate-400 hover:bg-blue-50/50 transition-colors font-manrope tracking-tight font-semibold"
+              href="#"
+              >Sequence Builder</a
+            >
+          </nav>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative hidden sm:block">
+          <span
+            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+            >search</span
+          >
+          <input
+            class="pl-10 pr-4 py-2 rounded-full border-none bg-surface-container-high text-sm focus:ring-2 focus:ring-primary/20 w-64"
+            placeholder="Quick search..."
+            type="text"
+          />
+        </div>
+        <button class="p-2 rounded-full hover:bg-blue-50/50 transition-colors">
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >notifications</span
+          >
+        </button>
+        <button class="p-2 rounded-full hover:bg-blue-50/50 transition-colors">
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >help_outline</span
+          >
+        </button>
+        <img
+          alt="User profile avatar"
+          class="w-8 h-8 rounded-full object-cover ml-2"
+          data-alt="Portrait of a smiling professional male musician"
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcDHs63MgBfc30A1DJ0TmjKuftizt5G2A_Yvix9mJ7Ik3pyC4b7eWDvb7QsHVd6lvv4Xqgi8IRSi3q2GahX6qwv4sjuYwiBKQKh-dcCu_LkBJKRy-KKqgwK66MN3K4lmN4Qx34tdPuE6CvmwHJwFfn2Y9Bjb1tWSHlcMD2WS-Qov4m4g209S16aNk_PMCVUfXyksfmZzTRgTxsjVScffp3jvWOjGIsFLNg5N7R87mGBsyc-NKb2q0rFBhZspdQUlq-AO2f87Dy6SM"
+        />
+      </div>
+    </header>
+    <!-- SideNavBar -->
+    <aside
+      class="h-screen w-64 fixed left-0 top-0 pt-20 bg-slate-100 dark:bg-slate-950 flex flex-col justify-between py-6 px-4 hidden md:flex"
+    >
+      <div class="space-y-8">
+        <div class="px-4">
+          <h2
+            class="text-xl font-extrabold text-blue-950 dark:text-blue-100 font-manrope"
+          >
+            The Liturgy
+          </h2>
+          <p
+            class="text-xs text-slate-600 dark:text-slate-400 font-manrope font-medium tracking-wide uppercase"
+          >
+            Music Management
+          </p>
+        </div>
+        <nav class="space-y-1">
+          <a
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 opacity-80 hover:bg-white dark:hover:bg-slate-900 transition-all font-manrope text-sm font-medium tracking-wide"
+            href="#"
+          >
+            <span class="material-symbols-outlined">dashboard</span>
+            Dashboard
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-900 dark:text-blue-100 font-bold border-l-4 border-blue-900 dark:border-blue-400 bg-white/50 dark:bg-slate-900/50 translate-x-1 font-manrope text-sm tracking-wide"
+            href="#"
+          >
+            <span class="material-symbols-outlined">library_music</span>
+            Song Library
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 opacity-80 hover:bg-white dark:hover:bg-slate-900 transition-all font-manrope text-sm font-medium tracking-wide"
+            href="#"
+          >
+            <span class="material-symbols-outlined">cloud_upload</span>
+            Upload Center
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 opacity-80 hover:bg-white dark:hover:bg-slate-900 transition-all font-manrope text-sm font-medium tracking-wide"
+            href="#"
+          >
+            <span class="material-symbols-outlined">reorder</span>
+            Sequence Builder
+          </a>
+        </nav>
+        <div class="px-4">
+          <button
+            class="w-full py-3 bg-primary text-on-primary rounded-full font-manrope font-semibold text-sm hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-sm"
+          >
+            <span class="material-symbols-outlined text-sm">add</span>
+            New Setlist
+          </button>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 opacity-80 hover:bg-white transition-all font-manrope text-sm font-medium"
+          href="#"
+        >
+          <span class="material-symbols-outlined">settings</span>
+          Settings
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 opacity-80 hover:bg-white transition-all font-manrope text-sm font-medium"
+          href="#"
+        >
+          <span class="material-symbols-outlined">contact_support</span>
+          Support
+        </a>
+      </div>
+    </aside>
+    <!-- Main Content Canvas -->
+    <main class="md:ml-64 pt-24 min-h-screen px-6 md:px-20 pb-20">
+      <!-- Hero Header Section -->
+      <div class="mb-12">
+        <div
+          class="flex flex-col md:flex-row md:items-end justify-between gap-6"
+        >
+          <div>
+            <h1
+              class="text-4xl font-extrabold font-headline tracking-tight text-primary mb-2"
+            >
+              Song Library
+            </h1>
+            <p class="text-on-surface-variant text-lg max-w-2xl font-body">
+              Manage your spiritual repertoire with editorial precision. Every
+              note, key, and tempo curated for excellence.
+            </p>
+          </div>
+          <button
+            class="px-8 py-4 bg-primary text-on-primary rounded-full font-headline font-bold text-sm tracking-widest uppercase hover:translate-y-[-2px] transition-transform shadow-lg flex items-center gap-3 w-fit"
+          >
+            <span class="material-symbols-outlined">add_circle</span>
+            Add New Song
+          </button>
+        </div>
+      </div>
+      <!-- Filter & Search Altar -->
+      <section class="bg-surface-container-low p-6 rounded-xl mb-12 shadow-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <!-- Search Bar -->
+          <div class="lg:col-span-5 relative">
+            <span
+              class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/60"
+              >search</span
+            >
+            <input
+              class="w-full pl-12 pr-6 py-4 bg-surface-container-lowest border-none rounded-lg font-body text-on-surface focus:ring-2 focus:ring-primary shadow-sm"
+              placeholder="Search titles, authors, or lyrics..."
+              type="text"
+            />
+          </div>
+          <!-- Category Filter -->
+          <div class="lg:col-span-2">
+            <label
+              class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1 ml-1"
+              >Category</label
+            >
+            <select
+              class="w-full bg-surface-container-lowest border-none rounded-lg py-3 font-body text-sm focus:ring-2 focus:ring-primary shadow-sm"
+            >
+              <option>All Categories</option>
+              <option>Worship</option>
+              <option>Hymn</option>
+              <option>Contemporary</option>
+              <option>Anthem</option>
+            </select>
+          </div>
+          <!-- Tempo Filter -->
+          <div class="lg:col-span-2">
+            <label
+              class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1 ml-1"
+              >Tempo</label
+            >
+            <select
+              class="w-full bg-surface-container-lowest border-none rounded-lg py-3 font-body text-sm focus:ring-2 focus:ring-primary shadow-sm"
+            >
+              <option>Any Tempo</option>
+              <option>Slow (&lt; 70 BPM)</option>
+              <option>Mid (70-110 BPM)</option>
+              <option>Fast (&gt; 110 BPM)</option>
+            </select>
+          </div>
+          <!-- Sort Filter -->
+          <div class="lg:col-span-3">
+            <label
+              class="block text-[10px] font-bold uppercase tracking-widest text-outline mb-1 ml-1"
+              >Sort By</label
+            >
+            <select
+              class="w-full bg-surface-container-lowest border-none rounded-lg py-3 font-body text-sm focus:ring-2 focus:ring-primary shadow-sm"
+            >
+              <option>Date Added (Newest)</option>
+              <option>Alphabetical (A-Z)</option>
+              <option>Most Played</option>
+              <option>Key Signature</option>
+            </select>
+          </div>
+        </div>
+      </section>
+      <!-- Bento Song Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        <!-- Song Card 1 -->
+        <div
+          class="group relative bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+        >
+          <div
+            class="absolute left-0 top-8 bottom-8 w-1.5 bg-surface-tint rounded-r-full group-hover:bg-primary transition-colors"
+          ></div>
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <span
+                class="inline-block px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                >Hymn</span
+              >
+              <h3
+                class="text-2xl font-headline font-bold text-on-surface group-hover:text-primary transition-colors"
+              >
+                Amazing Grace
+              </h3>
+              <p class="text-on-surface-variant font-body">John Newton</p>
+            </div>
+            <button
+              class="p-2 hover:bg-surface-container rounded-full text-outline-variant hover:text-primary transition-all"
+            >
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-6 mt-auto">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Key</span
+              >
+              <span class="font-headline font-bold text-primary">G Major</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >BPM</span
+              >
+              <span class="font-headline font-bold text-primary">68</span>
+            </div>
+            <div class="flex flex-col ml-auto">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Last Played</span
+              >
+              <span class="font-body text-sm text-on-surface-variant"
+                >2 days ago</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Song Card 2 -->
+        <div
+          class="group relative bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+        >
+          <div
+            class="absolute left-0 top-8 bottom-8 w-1.5 bg-outline-variant rounded-r-full group-hover:bg-primary transition-colors"
+          ></div>
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <span
+                class="inline-block px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                >Worship</span
+              >
+              <h3
+                class="text-2xl font-headline font-bold text-on-surface group-hover:text-primary transition-colors"
+              >
+                Living Waters
+              </h3>
+              <p class="text-on-surface-variant font-body">Kristene DiMarco</p>
+            </div>
+            <button
+              class="p-2 hover:bg-surface-container rounded-full text-outline-variant hover:text-primary transition-all"
+            >
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-6 mt-auto">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Key</span
+              >
+              <span class="font-headline font-bold text-primary">D Major</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >BPM</span
+              >
+              <span class="font-headline font-bold text-primary">74</span>
+            </div>
+            <div class="flex flex-col ml-auto">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Last Played</span
+              >
+              <span class="font-body text-sm text-on-surface-variant"
+                >Nov 12</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Song Card 3 (Editorial Large Card) -->
+        <div
+          class="group relative bg-primary-container p-8 rounded-xl shadow-lg md:col-span-2 xl:col-span-1 overflow-hidden"
+        >
+          <div class="relative z-10 h-full flex flex-col">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <span
+                  class="inline-block px-3 py-1 bg-on-primary-container text-primary-container text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                  >Featured / New</span
+                >
+                <h3
+                  class="text-3xl font-headline font-extrabold text-white leading-tight"
+                >
+                  Behold the Lamb of God
+                </h3>
+                <p class="text-on-primary-fixed-dim font-body mt-2">
+                  The Porter's Gate
+                </p>
+              </div>
+            </div>
+            <div class="mt-auto grid grid-cols-2 gap-4">
+              <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+                <span
+                  class="block text-[10px] font-bold uppercase text-on-primary-container"
+                  >Primary Key</span
+                >
+                <span class="text-white font-headline font-bold">A Minor</span>
+              </div>
+              <div class="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+                <span
+                  class="block text-[10px] font-bold uppercase text-on-primary-container"
+                  >Sequence</span
+                >
+                <span class="text-white font-headline font-bold">Standard</span>
+              </div>
+            </div>
+          </div>
+          <!-- Abstract visual element -->
+          <div
+            class="absolute -right-12 -bottom-12 w-64 h-64 bg-secondary rounded-full opacity-20 blur-3xl group-hover:scale-110 transition-transform duration-700"
+          ></div>
+        </div>
+        <!-- Song Card 4 -->
+        <div
+          class="group relative bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+        >
+          <div
+            class="absolute left-0 top-8 bottom-8 w-1.5 bg-outline-variant rounded-r-full group-hover:bg-primary transition-colors"
+          ></div>
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <span
+                class="inline-block px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                >Contemporary</span
+              >
+              <h3
+                class="text-2xl font-headline font-bold text-on-surface group-hover:text-primary transition-colors"
+              >
+                Resurrecting
+              </h3>
+              <p class="text-on-surface-variant font-body">Elevation Worship</p>
+            </div>
+            <button
+              class="p-2 hover:bg-surface-container rounded-full text-outline-variant hover:text-primary transition-all"
+            >
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-6 mt-auto">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Key</span
+              >
+              <span class="font-headline font-bold text-primary">Db Major</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >BPM</span
+              >
+              <span class="font-headline font-bold text-primary">73</span>
+            </div>
+            <div class="flex flex-col ml-auto">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Last Played</span
+              >
+              <span class="font-body text-sm text-on-surface-variant"
+                >Oct 28</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Song Card 5 -->
+        <div
+          class="group relative bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+        >
+          <div
+            class="absolute left-0 top-8 bottom-8 w-1.5 bg-outline-variant rounded-r-full group-hover:bg-primary transition-colors"
+          ></div>
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <span
+                class="inline-block px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                >Hymn</span
+              >
+              <h3
+                class="text-2xl font-headline font-bold text-on-surface group-hover:text-primary transition-colors"
+              >
+                It Is Well
+              </h3>
+              <p class="text-on-surface-variant font-body">Horatio Spafford</p>
+            </div>
+            <button
+              class="p-2 hover:bg-surface-container rounded-full text-outline-variant hover:text-primary transition-all"
+            >
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-6 mt-auto">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Key</span
+              >
+              <span class="font-headline font-bold text-primary">C Major</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >BPM</span
+              >
+              <span class="font-headline font-bold text-primary">64</span>
+            </div>
+            <div class="flex flex-col ml-auto">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Last Played</span
+              >
+              <span class="font-body text-sm text-on-surface-variant"
+                >Last Week</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Song Card 6 -->
+        <div
+          class="group relative bg-surface-container-lowest p-8 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+        >
+          <div
+            class="absolute left-0 top-8 bottom-8 w-1.5 bg-outline-variant rounded-r-full group-hover:bg-primary transition-colors"
+          ></div>
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <span
+                class="inline-block px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-extrabold uppercase tracking-tighter rounded-full mb-3"
+                >Worship</span
+              >
+              <h3
+                class="text-2xl font-headline font-bold text-on-surface group-hover:text-primary transition-colors"
+              >
+                Gratitude
+              </h3>
+              <p class="text-on-surface-variant font-body">Brandon Lake</p>
+            </div>
+            <button
+              class="p-2 hover:bg-surface-container rounded-full text-outline-variant hover:text-primary transition-all"
+            >
+              <span class="material-symbols-outlined">more_vert</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-6 mt-auto">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Key</span
+              >
+              <span class="font-headline font-bold text-primary">B Major</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >BPM</span
+              >
+              <span class="font-headline font-bold text-primary">78</span>
+            </div>
+            <div class="flex flex-col ml-auto">
+              <span class="text-[10px] font-bold uppercase text-outline"
+                >Last Played</span
+              >
+              <span class="font-body text-sm text-on-surface-variant"
+                >Yesterday</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Pagination / Load More Altar -->
+      <div class="mt-20 flex flex-col items-center">
+        <p class="text-on-surface-variant font-body text-sm mb-6">
+          Showing 6 of 482 liturgical works
+        </p>
+        <button
+          class="px-12 py-4 rounded-full bg-surface-container-high text-primary font-headline font-bold text-sm hover:bg-surface-container-highest transition-all flex items-center gap-2"
+        >
+          Load More Songs
+          <span class="material-symbols-outlined">keyboard_arrow_down</span>
+        </button>
+      </div>
+    </main>
+    <!-- Bottom Navigation (Mobile Only) -->
+    <nav
+      class="md:hidden fixed bottom-0 w-full bg-white dark:bg-slate-900 flex justify-around items-center h-16 shadow-2xl z-50"
+    >
+      <button class="flex flex-col items-center text-slate-500">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="text-[10px] mt-1 font-bold">Dashboard</span>
+      </button>
+      <button class="flex flex-col items-center text-primary">
+        <span class="material-symbols-outlined">library_music</span>
+        <span class="text-[10px] mt-1 font-bold">Library</span>
+      </button>
+      <div class="relative -top-4">
+        <button class="bg-primary text-white p-4 rounded-full shadow-lg">
+          <span class="material-symbols-outlined">add</span>
+        </button>
+      </div>
+      <button class="flex flex-col items-center text-slate-500">
+        <span class="material-symbols-outlined">cloud_upload</span>
+        <span class="text-[10px] mt-1 font-bold">Upload</span>
+      </button>
+      <button class="flex flex-col items-center text-slate-500">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-[10px] mt-1 font-bold">Settings</span>
+      </button>
+    </nav>
+  </body>
+</html>

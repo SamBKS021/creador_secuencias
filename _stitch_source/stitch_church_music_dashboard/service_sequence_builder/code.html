@@ -1,0 +1,694 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Sequence Builder - Centro Cristiano Palmas</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-dim": "#d8dadd",
+              primary: "#002446",
+              "primary-fixed-dim": "#abc8f5",
+              "on-tertiary-container": "#c99a5f",
+              "on-background": "#191c1e",
+              "tertiary-fixed-dim": "#f0bd7f",
+              "on-primary-fixed": "#001c39",
+              "secondary-fixed-dim": "#afcbd8",
+              "tertiary-fixed": "#ffddb7",
+              "on-secondary-container": "#4e6874",
+              "on-primary-container": "#87a4cf",
+              "on-primary-fixed-variant": "#2a486e",
+              "secondary-fixed": "#cbe7f5",
+              "on-secondary-fixed-variant": "#304a55",
+              "surface-variant": "#e0e3e6",
+              surface: "#f7f9fc",
+              "surface-bright": "#f7f9fc",
+              "inverse-primary": "#abc8f5",
+              "on-secondary-fixed": "#021f29",
+              "inverse-on-surface": "#eff1f4",
+              "on-tertiary-fixed-variant": "#62400c",
+              "on-tertiary-fixed": "#2a1700",
+              "primary-fixed": "#d3e3ff",
+              "surface-container": "#eceef1",
+              "secondary-container": "#cbe7f5",
+              "on-secondary": "#ffffff",
+              secondary: "#48626e",
+              error: "#ba1a1a",
+              "primary-container": "#1a3a5f",
+              outline: "#73777f",
+              "surface-tint": "#426087",
+              "surface-container-highest": "#e0e3e6",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              background: "#f7f9fc",
+              "on-primary": "#ffffff",
+              "surface-container-low": "#f2f4f7",
+              "on-surface": "#191c1e",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#43474e",
+              "on-tertiary": "#ffffff",
+              "on-error-container": "#93000a",
+              "tertiary-container": "#523200",
+              "inverse-surface": "#2d3133",
+              tertiary: "#351f00",
+              "surface-container-high": "#e6e8eb",
+              "outline-variant": "#c3c6cf"
+            },
+            fontFamily: {
+              headline: ["Manrope"],
+              body: ["Inter"],
+              label: ["Inter"]
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              full: "0.75rem"
+            }
+          }
+        }
+      };
+    </script>
+    <style>
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f7f9fc;
+        color: #191c1e;
+      }
+      h1,
+      h2,
+      h3,
+      .font-headline {
+        font-family: "Manrope", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-surface text-on-surface">
+    <!-- TopAppBar -->
+    <header
+      class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-md no-border bg-surface-container-low flex justify-between items-center h-16 px-8 w-full"
+    >
+      <div class="flex items-center gap-8">
+        <span class="text-lg font-bold tracking-widest uppercase text-blue-950"
+          >Centro Cristiano Palmas</span
+        >
+        <div class="hidden md:flex items-center gap-6">
+          <nav class="flex gap-6 font-manrope tracking-tight font-semibold">
+            <a
+              class="text-slate-500 hover:bg-blue-50/50 transition-colors px-3 py-1 rounded"
+              href="#"
+              >Dashboard</a
+            >
+            <a
+              class="text-slate-500 hover:bg-blue-50/50 transition-colors px-3 py-1 rounded"
+              href="#"
+              >Library</a
+            >
+            <a class="text-blue-900 font-bold px-3 py-1 rounded" href="#"
+              >Sequence Builder</a
+            >
+          </nav>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button
+          class="p-2 text-slate-500 hover:bg-blue-50/50 transition-colors rounded-full"
+        >
+          <span class="material-symbols-outlined" data-icon="notifications"
+            >notifications</span
+          >
+        </button>
+        <button
+          class="p-2 text-slate-500 hover:bg-blue-50/50 transition-colors rounded-full"
+        >
+          <span class="material-symbols-outlined" data-icon="help_outline"
+            >help_outline</span
+          >
+        </button>
+        <div
+          class="h-8 w-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden"
+        >
+          <img
+            alt="User profile avatar"
+            data-alt="Minimalist user profile avatar icon"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1-dWBeChu_wE__Fw-xeVKVbz5nhYIgdoAIgkR5ysiolLFcfc_7uzVEuUeJ1_bhArk_qLx-c6ftwAzs4NNJN_YSLTgdYn6tlID2x23SUfoqDxtGOxU85jv_aAlwNLyr55tU9wGX5WCbUSIUcrHGAtQsQejrZ-_Th7ck9EcddfmbcLEcG-8M93t0Iq1XuQkSX-QJfCfzAYcLvsWVlHzNCtvqkn8i92uXkEcC0Yk7HafY6fYSTvKoA9WIr_zheXL4Z-QTVFjFvlnL0I"
+          />
+        </div>
+      </div>
+    </header>
+    <!-- SideNavBar -->
+    <aside
+      class="h-screen w-64 fixed left-0 top-0 pt-20 bg-slate-100 flex flex-col justify-between py-6 px-4 tonal shift using surface-container-low"
+    >
+      <div class="space-y-8">
+        <div class="px-4">
+          <h2 class="text-xl font-extrabold text-blue-950 font-manrope">
+            The Liturgy
+          </h2>
+          <p
+            class="text-xs font-manrope text-slate-600 opacity-80 uppercase tracking-widest"
+          >
+            Music Management
+          </p>
+        </div>
+        <nav class="space-y-1 font-manrope text-sm font-medium tracking-wide">
+          <a
+            class="flex items-center gap-3 px-4 py-3 text-slate-600 opacity-80 hover:bg-white hover:opacity-100 transition-transform duration-300"
+            href="#"
+          >
+            <span class="material-symbols-outlined" data-icon="dashboard"
+              >dashboard</span
+            >
+            Dashboard
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 text-slate-600 opacity-80 hover:bg-white hover:opacity-100 transition-transform duration-300"
+            href="#"
+          >
+            <span class="material-symbols-outlined" data-icon="library_music"
+              >library_music</span
+            >
+            Song Library
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 text-slate-600 opacity-80 hover:bg-white hover:opacity-100 transition-transform duration-300"
+            href="#"
+          >
+            <span class="material-symbols-outlined" data-icon="cloud_upload"
+              >cloud_upload</span
+            >
+            Upload Center
+          </a>
+          <a
+            class="flex items-center gap-3 px-4 py-3 text-blue-900 font-bold border-l-4 border-blue-900 bg-white/50 translate-x-1"
+            href="#"
+          >
+            <span class="material-symbols-outlined" data-icon="reorder"
+              >reorder</span
+            >
+            Sequence Builder
+          </a>
+        </nav>
+        <div class="px-4">
+          <button
+            class="w-full bg-primary text-on-primary py-3 rounded-full font-manrope font-bold text-sm hover:bg-primary-container transition-all flex items-center justify-center gap-2"
+          >
+            <span class="material-symbols-outlined text-sm" data-icon="add"
+              >add</span
+            >
+            New Setlist
+          </button>
+        </div>
+      </div>
+      <div
+        class="space-y-1 pt-6 border-t border-outline-variant/10 font-manrope text-sm font-medium tracking-wide"
+      >
+        <a
+          class="flex items-center gap-3 px-4 py-2 text-slate-600 opacity-80 hover:bg-white hover:opacity-100"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="settings"
+            >settings</span
+          >
+          Settings
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-2 text-slate-600 opacity-80 hover:bg-white hover:opacity-100"
+          href="#"
+        >
+          <span class="material-symbols-outlined" data-icon="contact_support"
+            >contact_support</span
+          >
+          Support
+        </a>
+      </div>
+    </aside>
+    <!-- Main Content Area -->
+    <main class="pl-64 pt-16 min-h-screen">
+      <div class="max-w-[1600px] mx-auto p-12">
+        <!-- Page Header -->
+        <div class="mb-12 flex justify-between items-end">
+          <div class="space-y-2">
+            <span
+              class="text-secondary font-label text-sm uppercase tracking-[0.2em]"
+              >Service Preparation</span
+            >
+            <h1
+              class="text-4xl font-extrabold text-primary font-headline tracking-tight"
+            >
+              Sequence Builder
+            </h1>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex flex-col items-end gap-1">
+              <label
+                class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold"
+                >Planned For</label
+              >
+              <input
+                class="bg-surface-container-low border-none rounded-md text-sm font-manrope focus:ring-2 focus:ring-primary/20 p-2"
+                type="date"
+                value="2023-10-29"
+              />
+            </div>
+            <button
+              class="bg-primary text-on-primary px-8 py-3 rounded-md font-manrope font-bold text-sm shadow-sm hover:translate-y-[-2px] transition-all"
+            >
+              Save Sequence
+            </button>
+          </div>
+        </div>
+        <!-- Two-Pane Layout -->
+        <div class="grid grid-cols-12 gap-10 items-start">
+          <!-- Left Pane: Mini Library -->
+          <section class="col-span-12 lg:col-span-4 space-y-6">
+            <div class="bg-surface-container-low p-6 rounded-xl space-y-6">
+              <div class="relative">
+                <span
+                  class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-xl"
+                  data-icon="search"
+                  >search</span
+                >
+                <input
+                  class="w-full bg-surface-container-lowest border-none rounded-lg pl-10 pr-4 py-3 text-sm font-body focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-outline-variant"
+                  placeholder="Search songs, keys, or authors..."
+                  type="text"
+                />
+              </div>
+              <div class="space-y-3">
+                <h3
+                  class="text-[11px] font-bold text-outline uppercase tracking-widest px-1"
+                >
+                  Song Library
+                </h3>
+                <!-- Mini Song Item -->
+                <div
+                  class="group bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between hover:bg-primary-container/10 transition-colors cursor-pointer border-l-[3px] border-transparent hover:border-surface-tint"
+                >
+                  <div class="space-y-0.5">
+                    <div class="text-sm font-bold text-primary font-headline">
+                      Be Thou My Vision
+                    </div>
+                    <div
+                      class="text-[10px] text-on-surface-variant font-medium"
+                    >
+                      Traditional • E Major • 68 BPM
+                    </div>
+                  </div>
+                  <button
+                    class="h-8 w-8 rounded-full flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all"
+                  >
+                    <span
+                      class="material-symbols-outlined text-lg"
+                      data-icon="add"
+                      >add</span
+                    >
+                  </button>
+                </div>
+                <div
+                  class="group bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between hover:bg-primary-container/10 transition-colors cursor-pointer border-l-[3px] border-transparent hover:border-surface-tint"
+                >
+                  <div class="space-y-0.5">
+                    <div class="text-sm font-bold text-primary font-headline">
+                      10,000 Reasons
+                    </div>
+                    <div
+                      class="text-[10px] text-on-surface-variant font-medium"
+                    >
+                      Matt Redman • G Major • 72 BPM
+                    </div>
+                  </div>
+                  <button
+                    class="h-8 w-8 rounded-full flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all"
+                  >
+                    <span
+                      class="material-symbols-outlined text-lg"
+                      data-icon="add"
+                      >add</span
+                    >
+                  </button>
+                </div>
+                <div
+                  class="group bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between hover:bg-primary-container/10 transition-colors cursor-pointer border-l-[3px] border-transparent hover:border-surface-tint"
+                >
+                  <div class="space-y-0.5">
+                    <div class="text-sm font-bold text-primary font-headline">
+                      In Christ Alone
+                    </div>
+                    <div
+                      class="text-[10px] text-on-surface-variant font-medium"
+                    >
+                      Getty • D Major • 64 BPM
+                    </div>
+                  </div>
+                  <button
+                    class="h-8 w-8 rounded-full flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all"
+                  >
+                    <span
+                      class="material-symbols-outlined text-lg"
+                      data-icon="add"
+                      >add</span
+                    >
+                  </button>
+                </div>
+                <div
+                  class="group bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between hover:bg-primary-container/10 transition-colors cursor-pointer border-l-[3px] border-transparent hover:border-surface-tint"
+                >
+                  <div class="space-y-0.5">
+                    <div class="text-sm font-bold text-primary font-headline">
+                      Goodness of God
+                    </div>
+                    <div
+                      class="text-[10px] text-on-surface-variant font-medium"
+                    >
+                      Bethel • Ab Major • 70 BPM
+                    </div>
+                  </div>
+                  <button
+                    class="h-8 w-8 rounded-full flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-all"
+                  >
+                    <span
+                      class="material-symbols-outlined text-lg"
+                      data-icon="add"
+                      >add</span
+                    >
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <!-- Right Pane: Current Sequence -->
+          <section class="col-span-12 lg:col-span-8 space-y-6">
+            <div
+              class="bg-surface-container-lowest p-8 rounded-xl shadow-sm min-h-[600px] flex flex-col"
+            >
+              <div
+                class="flex items-center justify-between mb-8 border-b border-surface-container-high pb-6"
+              >
+                <input
+                  class="text-2xl font-bold text-primary border-none p-0 focus:ring-0 w-full placeholder:text-outline-variant"
+                  placeholder="Untitled Sunday Service"
+                  type="text"
+                  value="Morning Worship - Ordinary Time"
+                />
+                <div class="flex items-center gap-2 text-on-surface-variant">
+                  <span
+                    class="material-symbols-outlined text-lg"
+                    data-icon="history"
+                    >history</span
+                  >
+                  <span class="text-xs font-medium">Last autosaved 2m ago</span>
+                </div>
+              </div>
+              <!-- Sequence List -->
+              <div class="space-y-0 relative">
+                <!-- Sequence Item 1 -->
+                <div class="relative z-10">
+                  <div
+                    class="flex items-start gap-4 p-4 rounded-lg bg-surface hover:bg-surface-container transition-colors group"
+                  >
+                    <div
+                      class="mt-2 text-outline-variant cursor-grab active:cursor-grabbing"
+                    >
+                      <span
+                        class="material-symbols-outlined"
+                        data-icon="drag_indicator"
+                        >drag_indicator</span
+                      >
+                    </div>
+                    <div class="flex-1 space-y-4">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                          <span
+                            class="h-6 w-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold"
+                            >1</span
+                          >
+                          <h4 class="text-lg font-bold text-primary">
+                            Great Is Thy Faithfulness
+                          </h4>
+                          <span
+                            class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider"
+                            >C Major</span
+                          >
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <button
+                            class="p-2 text-on-surface-variant hover:text-primary transition-colors"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="expand_more"
+                              >expand_more</span
+                            >
+                          </button>
+                          <button
+                            class="p-2 text-on-surface-variant hover:text-error transition-colors"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="delete_outline"
+                              >delete_outline</span
+                            >
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Transition Marker -->
+                  <div class="flex flex-col items-center py-4 relative">
+                    <div class="h-10 w-[1px] bg-outline-variant/30"></div>
+                    <span
+                      class="absolute top-1/2 -translate-y-1/2 bg-surface text-[9px] font-bold text-outline-variant border border-outline-variant/20 px-3 py-1 rounded-full uppercase tracking-[0.15em]"
+                      >Crossfade</span
+                    >
+                  </div>
+                </div>
+                <!-- Sequence Item 2 (Expanded) -->
+                <div class="relative z-10">
+                  <div
+                    class="flex items-start gap-4 p-4 rounded-lg bg-primary-container/5 border-l-[4px] border-surface-tint transition-colors"
+                  >
+                    <div class="mt-2 text-outline-variant cursor-grab">
+                      <span
+                        class="material-symbols-outlined"
+                        data-icon="drag_indicator"
+                        >drag_indicator</span
+                      >
+                    </div>
+                    <div class="flex-1 space-y-4">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                          <span
+                            class="h-6 w-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold"
+                            >2</span
+                          >
+                          <h4 class="text-lg font-bold text-primary">
+                            Amazing Grace (My Chains Are Gone)
+                          </h4>
+                          <span
+                            class="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[10px] font-bold uppercase tracking-wider"
+                            >G Major</span
+                          >
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <button
+                            class="p-2 text-primary rotate-180 transition-transform"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="expand_more"
+                              >expand_more</span
+                            >
+                          </button>
+                          <button
+                            class="p-2 text-on-surface-variant hover:text-error transition-colors"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="delete_outline"
+                              >delete_outline</span
+                            >
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        class="grid grid-cols-3 gap-6 pt-4 border-t border-outline-variant/20"
+                      >
+                        <div class="space-y-1">
+                          <span
+                            class="text-[10px] uppercase tracking-widest text-outline font-bold"
+                            >BPM / Meter</span
+                          >
+                          <div class="text-sm font-medium">74 BPM • 4/4</div>
+                        </div>
+                        <div class="space-y-1">
+                          <span
+                            class="text-[10px] uppercase tracking-widest text-outline font-bold"
+                            >Lead Vocal</span
+                          >
+                          <div class="text-sm font-medium">
+                            David H. (Tenor)
+                          </div>
+                        </div>
+                        <div class="space-y-1">
+                          <span
+                            class="text-[10px] uppercase tracking-widest text-outline font-bold"
+                            >Resources</span
+                          >
+                          <div class="flex gap-2">
+                            <span
+                              class="material-symbols-outlined text-primary text-xl cursor-pointer"
+                              data-icon="description"
+                              >description</span
+                            >
+                            <span
+                              class="material-symbols-outlined text-primary text-xl cursor-pointer"
+                              data-icon="music_video"
+                              >music_video</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Transition Marker -->
+                  <div class="flex flex-col items-center py-4 relative">
+                    <div class="h-10 w-[1px] bg-outline-variant/30"></div>
+                    <span
+                      class="absolute top-1/2 -translate-y-1/2 bg-surface text-[9px] font-bold text-outline-variant border border-outline-variant/20 px-3 py-1 rounded-full uppercase tracking-[0.15em]"
+                      >Vamp Intro</span
+                    >
+                  </div>
+                </div>
+                <!-- Sequence Item 3 -->
+                <div class="relative z-10">
+                  <div
+                    class="flex items-start gap-4 p-4 rounded-lg bg-surface hover:bg-surface-container transition-colors group"
+                  >
+                    <div class="mt-2 text-outline-variant cursor-grab">
+                      <span
+                        class="material-symbols-outlined"
+                        data-icon="drag_indicator"
+                        >drag_indicator</span
+                      >
+                    </div>
+                    <div class="flex-1 space-y-4">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                          <span
+                            class="h-6 w-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold"
+                            >3</span
+                          >
+                          <h4 class="text-lg font-bold text-primary">
+                            How Great Thou Art
+                          </h4>
+                          <span
+                            class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider"
+                            >Bb Major</span
+                          >
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <button
+                            class="p-2 text-on-surface-variant hover:text-primary transition-colors"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="expand_more"
+                              >expand_more</span
+                            >
+                          </button>
+                          <button
+                            class="p-2 text-on-surface-variant hover:text-error transition-colors"
+                          >
+                            <span
+                              class="material-symbols-outlined"
+                              data-icon="delete_outline"
+                              >delete_outline</span
+                            >
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Drop Placeholder -->
+                <div
+                  class="mt-8 border-2 border-dashed border-outline-variant rounded-xl h-24 flex flex-col items-center justify-center bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer group"
+                >
+                  <span
+                    class="material-symbols-outlined text-3xl mb-1 group-hover:scale-110 transition-transform"
+                    data-icon="library_add"
+                    >library_add</span
+                  >
+                  <span class="text-sm font-medium"
+                    >Drag songs here or click to add from library</span
+                  >
+                </div>
+              </div>
+              <!-- Sequence Footer Metadata -->
+              <div class="mt-auto pt-12 grid grid-cols-4 gap-4 text-center">
+                <div class="bg-surface-container-low p-4 rounded-lg">
+                  <div
+                    class="text-[10px] uppercase tracking-widest text-outline font-bold mb-1"
+                  >
+                    Total Songs
+                  </div>
+                  <div class="text-xl font-bold text-primary">3</div>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-lg">
+                  <div
+                    class="text-[10px] uppercase tracking-widest text-outline font-bold mb-1"
+                  >
+                    Est. Duration
+                  </div>
+                  <div class="text-xl font-bold text-primary">14:20</div>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-lg">
+                  <div
+                    class="text-[10px] uppercase tracking-widest text-outline font-bold mb-1"
+                  >
+                    Energy Flow
+                  </div>
+                  <div class="text-xl font-bold text-primary">Med-High</div>
+                </div>
+                <div class="bg-surface-container-low p-4 rounded-lg">
+                  <div
+                    class="text-[10px] uppercase tracking-widest text-outline font-bold mb-1"
+                  >
+                    Complexity
+                  </div>
+                  <div class="text-xl font-bold text-primary">Lvl 2</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
