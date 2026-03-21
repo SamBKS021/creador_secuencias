@@ -1,7 +1,7 @@
 function PageHeader({ eyebrow, title, description, actions }) {
   return (
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div className="space-y-3">
+    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <div className="min-w-0 space-y-3 xl:flex-1">
         {eyebrow ? (
           <p className="font-headline text-xs font-bold uppercase tracking-[0.35em] text-[var(--outline)]">
             {eyebrow}
@@ -16,7 +16,11 @@ function PageHeader({ eyebrow, title, description, actions }) {
           ) : null}
         </div>
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full items-center gap-3 sm:flex-nowrap xl:w-auto xl:shrink-0">
+          {actions}
+        </div>
+      ) : null}
     </div>
   )
 }
