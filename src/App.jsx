@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Toaster } from 'sileo'
 import { AppProvider } from './app/store/AppContext.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -10,6 +11,7 @@ function App() {
   return (
     <AppProvider>
       <BrowserRouter>
+        <Toaster position="top-right" theme="light" />
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
