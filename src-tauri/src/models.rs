@@ -117,7 +117,6 @@ impl Default for SongContentRecord {
 #[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct SongPayload {
-    #[serde(flatten)]
     pub song: Song,
     pub draft_id: Option<String>,
     pub content_draft: Option<SongContentRecord>,
@@ -268,4 +267,22 @@ pub struct ExportResult {
     pub file_path: String,
     pub file_name: String,
     pub exported_at: String,
+    pub overwritten: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportCheckResult {
+    pub exists: bool,
+    pub file_path: String,
+    pub file_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SequenceExportStatus {
+    pub sequence_id: String,
+    pub exists: bool,
+    pub file_path: String,
+    pub file_name: String,
 }

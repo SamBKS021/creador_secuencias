@@ -24,9 +24,10 @@ export const initialState = {
   activeDraftId: '',
   activeSequenceId: '',
   exportResult: null,
-  notice: '',
   error: '',
 }
+
+export const NEW_SEQUENCE_ID = '__new__'
 
 export function appReducer(state, action) {
   switch (action.type) {
@@ -64,7 +65,6 @@ export function appReducer(state, action) {
         ...state,
         workspaceRoot: action.payload.workspaceRoot,
         recentRoots: action.payload.recentRoots || state.recentRoots,
-        notice: action.payload.notice || '',
       }
     case 'library:filters':
       return {
@@ -95,7 +95,6 @@ export function appReducer(state, action) {
         stats: action.payload.stats || buildStats(songs, state.sequences),
         activeSongId: song.id,
         activeDraftId: drafts[0]?.id || '',
-        notice: action.payload.notice || 'Canción guardada correctamente.',
       }
     }
     case 'songs:delete': {
@@ -124,7 +123,6 @@ export function appReducer(state, action) {
         sequences,
         stats: action.payload.stats || buildStats(state.songs, sequences),
         activeSequenceId: sequence.id,
-        notice: action.payload.notice || 'Secuencia guardada.',
       }
     }
     case 'sequence:delete': {
@@ -155,12 +153,11 @@ export function appReducer(state, action) {
       return {
         ...state,
         exportResult: action.payload,
-        notice: 'Exportación DOCX completada.',
       }
-    case 'notice:set':
+    case 'export:clear':
       return {
         ...state,
-        notice: action.payload,
+        exportResult: null,
       }
     case 'error:set':
       return {
@@ -181,6 +178,10 @@ export function selectActiveDraft(state) {
 }
 
 export function selectActiveSequence(state) {
+  if (state.activeSequenceId === NEW_SEQUENCE_ID) {
+    return createEmptySequence()
+  }
+
   return (
     state.sequences.find((sequence) => sequence.id === state.activeSequenceId) ||
     state.sequences[0] ||

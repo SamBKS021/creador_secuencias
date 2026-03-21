@@ -267,21 +267,15 @@ fn build_import_candidate(index: usize, builder: CandidateBuilder, path: &Path, 
 }
 
 fn build_content_draft(paragraphs: &[ParsedParagraph]) -> SongContentRecord {
-    let mut sections = Vec::new();
-    let mut current_section = SongSection {
-        id: "section-temp-1".into(),
-        section_type: "custom".into(),
-        label: "CUSTOM".into(),
-        lines: Vec::new(),
-    };
-    let mut section_index = 1;
+    let mut lines = Vec::new();
+    let section_index = 1;
     let mut line_index = 1;
 
     for paragraph in paragraphs {
         let text = paragraph.text.trim().to_string();
         if text.is_empty() {
-            if !current_section.lines.is_empty() {
-                current_section.lines.push(SongLine {
+            if !lines.is_empty() {
+                lines.push(SongLine {
                     id: format!("line-temp-{line_index}"),
                     kind: "empty".into(),
                     text: String::new(),
@@ -297,17 +291,13 @@ fn build_content_draft(paragraphs: &[ParsedParagraph]) -> SongContentRecord {
         }
 
         if is_section_header(&text) {
-            if !current_section.lines.is_empty() {
-                sections.push(current_section);
-                section_index += 1;
-            }
-
-            current_section = SongSection {
-                id: format!("section-temp-{section_index}"),
-                section_type: classify_section_type(&text),
-                label: text.clone(),
-                lines: Vec::new(),
-            };
+            lines.push(SongLine {
+                id: format!("line-temp-{line_index}"),
+                kind: "instruction".into(),
+                text,
+                chords: Vec::new(),
+            });
+            line_index += 1;
             continue;
         }
 
@@ -317,7 +307,7 @@ fn build_content_draft(paragraphs: &[ParsedParagraph]) -> SongContentRecord {
             ("lyric".to_string(), Vec::new())
         };
 
-        current_section.lines.push(SongLine {
+        lines.push(SongLine {
             id: format!("line-temp-{line_index}"),
             kind,
             text,
@@ -326,11 +316,24 @@ fn build_content_draft(paragraphs: &[ParsedParagraph]) -> SongContentRecord {
         line_index += 1;
     }
 
-    if !current_section.lines.is_empty() {
-        sections.push(current_section);
+    if lines.is_empty() {
+        lines.push(SongLine {
+            id: "line-temp-1".into(),
+            kind: "empty".into(),
+            text: String::new(),
+            chords: Vec::new(),
+        });
     }
 
-    SongContentRecord { version: 1, sections }
+    SongContentRecord {
+        version: 1,
+        sections: vec![SongSection {
+            id: format!("section-temp-{section_index}"),
+            section_type: "custom".into(),
+            label: "CUSTOM".into(),
+            lines,
+        }],
+    }
 }
 
 fn detect_author(paragraphs: &[ParsedParagraph]) -> String {
@@ -373,27 +376,6 @@ fn is_section_header(text: &str) -> bool {
         || normalized.starts_with("ESTRIBILLO")
         || normalized.starts_with("FINAL")
         || normalized.starts_with("INTERLUDIO")
-}
-
-fn classify_section_type(text: &str) -> String {
-    let normalized = text.trim().to_uppercase();
-    if normalized.starts_with("INTRO") {
-        "intro".into()
-    } else if normalized.starts_with("VERSO") {
-        "verse".into()
-    } else if normalized.starts_with("CORO") || normalized.starts_with("ESTRIBILLO") {
-        "chorus".into()
-    } else if normalized.starts_with("PRECORO") {
-        "prechorus".into()
-    } else if normalized.starts_with("PUENTE") {
-        "bridge".into()
-    } else if normalized.starts_with("FINAL") {
-        "outro".into()
-    } else if normalized.starts_with("INTERLUDIO") {
-        "interlude".into()
-    } else {
-        "custom".into()
-    }
 }
 
 fn is_chord_line(text: &str) -> bool {
@@ -454,6 +436,7 @@ fn flatten_lyrics(content: &SongContentRecord) -> String {
         for line in &section.lines {
             match line.kind.as_str() {
                 "lyric" | "instruction" => blocks.push(line.text.clone()),
+                "chords-only" => blocks.push(render_chord_line(&line.chords)),
                 "empty" => blocks.push(String::new()),
                 _ => {}
             }

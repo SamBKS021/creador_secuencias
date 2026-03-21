@@ -24,7 +24,10 @@ export function saveSong(payload) {
   const { draftId, contentDraft, ...song } = payload
   return invoke('save_song', {
     payload: {
-      song,
+      song: {
+        ...song,
+        chords: '',
+      },
       draftId: draftId || null,
       contentDraft: contentDraft || null,
     },
@@ -35,7 +38,10 @@ export function updateSong(payload) {
   const { draftId, contentDraft, ...song } = payload
   return invoke('update_song', {
     payload: {
-      song,
+      song: {
+        ...song,
+        chords: '',
+      },
       draftId: draftId || null,
       contentDraft: contentDraft || null,
     },
@@ -54,8 +60,20 @@ export function deleteSong(songId) {
   return invoke('delete_song', { songId })
 }
 
-export function exportSequenceDocx(sequenceId) {
-  return invoke('export_sequence_docx', { sequenceId })
+export function checkSequenceExportDocx(sequenceId) {
+  return invoke('check_sequence_docx_export', { sequenceId })
+}
+
+export function getSequenceExportStatuses() {
+  return invoke('get_sequence_export_statuses')
+}
+
+export function openExportedSequenceDocx(sequenceId) {
+  return invoke('open_exported_sequence_docx', { sequenceId })
+}
+
+export function exportSequenceDocx(sequenceId, overwrite = false) {
+  return invoke('export_sequence_docx', { sequenceId, overwrite })
 }
 
 export function openExportsFolder() {

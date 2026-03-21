@@ -32,7 +32,7 @@ export function filterSongs(songs, filters) {
   let collection = songs.filter((song) => {
     const matchesSearch =
       !search ||
-      [song.title, song.author, song.lyrics, song.chords]
+      [song.title, song.author, song.lyrics]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -121,14 +121,14 @@ export function generateSequenceMetrics(sequence, songs) {
     .filter(Boolean)
 
   const totalSongs = linkedSongs.length
-  const totalTempo = linkedSongs.reduce((sum, song) => sum + Number(song.tempo || 0), 0)
-  const avgTempo = totalSongs ? Math.round(totalTempo / totalSongs) : 0
+  const uniqueKeys = new Set(linkedSongs.map((song) => String(song.key || '').trim()).filter(Boolean)).size
+  const uniqueAuthors = new Set(linkedSongs.map((song) => String(song.author || '').trim()).filter(Boolean)).size
 
   return {
     totalSongs,
     estimatedDuration: `${Math.max(totalSongs * 4, 0)}:00`,
-    energyFlow: avgTempo > 90 ? 'Alta' : avgTempo > 70 ? 'Media' : 'Reposada',
-    complexity: totalSongs > 4 ? 'Alta' : totalSongs > 2 ? 'Media' : 'Básica',
+    uniqueKeys,
+    uniqueAuthors,
   }
 }
 

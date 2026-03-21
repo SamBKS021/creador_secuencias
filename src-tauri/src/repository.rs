@@ -5,6 +5,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
+use crate::export::export_sequence_docx_path;
 use crate::importer::normalize_title;
 use crate::models::{
     AppState, BootstrapPayload, Draft, ExportResult, Sequence, SequenceMutationResult, SequenceItem, Song,
@@ -177,8 +178,17 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
 pub fn delete_sequence(paths: &WorkspacePaths, sequence_id: &str) -> AppResult<()> {
     migrate_legacy_workspace_files(paths)?;
     let mut sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let removed_sequence = sequences.iter().find(|sequence| sequence.id == sequence_id).cloned();
     sequences.retain(|sequence| sequence.id != sequence_id);
     write_json(&paths.sequences_file, &sequences)?;
+
+    if let Some(sequence) = removed_sequence {
+        let export_path = export_sequence_docx_path(&paths.root, &sequence);
+        if export_path.exists() {
+            fs::remove_file(export_path)?;
+        }
+    }
+
     Ok(())
 }
 
@@ -190,7 +200,7 @@ pub fn resolve_paths(root: &str) -> AppResult<WorkspacePaths> {
     ensure_workspace(Path::new(root))
 }
 
-pub fn export_metadata(file_path: &Path) -> ExportResult {
+pub fn export_metadata(file_path: &Path, overwritten: bool) -> ExportResult {
     ExportResult {
         file_path: file_path.to_string_lossy().to_string(),
         file_name: file_path
@@ -198,6 +208,7 @@ pub fn export_metadata(file_path: &Path) -> ExportResult {
             .map(|item| item.to_string_lossy().to_string())
             .unwrap_or_else(|| "secuencia.docx".into()),
         exported_at: now_iso(),
+        overwritten,
     }
 }
 
@@ -256,11 +267,7 @@ fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&Song
 fn resolve_song_content(song: &Song, content_draft: Option<&SongContentRecord>) -> SongContentRecord {
     if let Some(draft) = content_draft {
         let flattened_lyrics = flatten_lyrics(draft);
-        let flattened_chords = flatten_chords(draft);
-
-        if normalized_multiline_eq(&flattened_lyrics, &song.lyrics)
-            && normalized_multiline_eq(&flattened_chords, &song.chords)
-        {
+        if normalized_multiline_eq(&flattened_lyrics, &song.lyrics) {
             return stabilize_content_ids(draft);
         }
     }
@@ -414,53 +421,34 @@ fn build_content_from_flat(lyrics: &str, chords: &str) -> SongContentRecord {
     let mut lines = Vec::new();
     let mut line_counter = 1usize;
 
-    for lyric_line in lyrics.lines() {
+    let normalized_lyrics = normalize_multiline(lyrics);
+    let source_text = if normalized_lyrics.is_empty() {
+        normalize_multiline(chords)
+    } else {
+        normalized_lyrics
+    };
+
+    for lyric_line in source_text.lines() {
+        let parsed_chords = parse_chords(lyric_line);
         lines.push(SongLine {
             id: format!("line-{line_counter:04}"),
             kind: if lyric_line.trim().is_empty() {
                 "empty".into()
+            } else if is_chord_line(lyric_line) && !parsed_chords.is_empty() {
+                "chords-only".into()
             } else if is_instruction_line(lyric_line) {
                 "instruction".into()
             } else {
                 "lyric".into()
             },
-            text: lyric_line.to_string(),
-            chords: Vec::new(),
+            text: if is_chord_line(lyric_line) && !parsed_chords.is_empty() {
+                String::new()
+            } else {
+                lyric_line.to_string()
+            },
+            chords: if is_chord_line(lyric_line) { parsed_chords } else { Vec::new() },
         });
         line_counter += 1;
-    }
-
-    if !chords.trim().is_empty() {
-        if !lines.is_empty() && !lines.last().is_some_and(|line| line.kind == "empty") {
-            lines.push(SongLine {
-                id: format!("line-{line_counter:04}"),
-                kind: "empty".into(),
-                text: String::new(),
-                chords: Vec::new(),
-            });
-            line_counter += 1;
-        }
-
-        for chord_line in chords.lines() {
-            let parsed_chords = parse_chords(chord_line);
-            lines.push(SongLine {
-                id: format!("line-{line_counter:04}"),
-                kind: if chord_line.trim().is_empty() {
-                    "empty".into()
-                } else if parsed_chords.is_empty() {
-                    "instruction".into()
-                } else {
-                    "chords-only".into()
-                },
-                text: if parsed_chords.is_empty() {
-                    chord_line.to_string()
-                } else {
-                    String::new()
-                },
-                chords: parsed_chords,
-            });
-            line_counter += 1;
-        }
     }
 
     if lines.is_empty() {
@@ -494,6 +482,7 @@ fn flatten_lyrics(content: &SongContentRecord) -> String {
         for line in &section.lines {
             match line.kind.as_str() {
                 "lyric" | "instruction" => blocks.push(line.text.clone()),
+                "chords-only" => blocks.push(render_chord_line(&line.chords)),
                 "empty" => blocks.push(String::new()),
                 _ => {}
             }
@@ -571,6 +560,21 @@ fn parse_chords(text: &str) -> Vec<SongChord> {
         .collect()
 }
 
+fn is_chord_line(text: &str) -> bool {
+    let chords = parse_chords(text);
+    if chords.is_empty() {
+        return false;
+    }
+
+    let normalized = text
+        .replace('|', " ")
+        .replace('/', " ")
+        .replace('-', " ");
+    let stripped = normalized.split_whitespace().collect::<Vec<_>>();
+
+    chords.len() >= 1 && stripped.len() <= chords.len() + 2
+}
+
 fn has_valid_chord_boundaries(text: &str, start: usize, end: usize) -> bool {
     let previous = text[..start].chars().next_back();
     let next = text[end..].chars().next();
@@ -600,7 +604,21 @@ fn normalize_multiline(value: &str) -> String {
 
 fn is_instruction_line(text: &str) -> bool {
     let trimmed = text.trim();
-    trimmed.starts_with('[') || trimmed.starts_with('(')
+    trimmed.starts_with('[')
+        || trimmed.starts_with('(')
+        || is_section_header_text(trimmed)
+}
+
+fn is_section_header_text(text: &str) -> bool {
+    let normalized = text.trim().to_uppercase();
+    normalized.starts_with("INTRO")
+        || normalized.starts_with("VERSO")
+        || normalized.starts_with("CORO")
+        || normalized.starts_with("PUENTE")
+        || normalized.starts_with("PRECORO")
+        || normalized.starts_with("ESTRIBILLO")
+        || normalized.starts_with("FINAL")
+        || normalized.starts_with("INTERLUDIO")
 }
 
 fn migrate_legacy_library(paths: &WorkspacePaths) -> AppResult<()> {

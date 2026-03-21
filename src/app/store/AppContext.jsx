@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useReducer } from 'react'
+import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
 import service from '../../services/workspaceService.js'
 import { isTauriRuntime } from '../../utils/platform.js'
 import { filterSongs } from '../../utils/workspace.js'
@@ -66,7 +66,6 @@ export function AppProvider({ children }) {
       payload: {
         workspaceRoot: result.workspaceRoot,
         recentRoots: config.recentRoots,
-        notice: 'Carpeta de trabajo configurada.',
       },
     })
 
@@ -125,6 +124,7 @@ export function AppProvider({ children }) {
         stats: result.stats,
       },
     })
+    return result
   }
 
   async function deleteSequence(sequenceId) {
@@ -137,21 +137,42 @@ export function AppProvider({ children }) {
     dispatch({ type: 'songs:delete', payload: songId })
   }
 
-  async function exportSequence(sequenceId) {
-    const result = await service.exportSequenceDocx(sequenceId)
+  async function checkSequenceExport(sequenceId) {
+    return service.checkSequenceExportDocx(sequenceId)
+  }
+
+  async function getSequenceExportStatuses() {
+    return service.getSequenceExportStatuses()
+  }
+
+  async function openExportedSequence(sequenceId) {
+    return service.openExportedSequenceDocx(sequenceId)
+  }
+
+  async function exportSequence(sequenceId, overwrite = false) {
+    const result = await service.exportSequenceDocx(sequenceId, overwrite)
     dispatch({ type: 'export:done', payload: result })
+    return result
   }
 
   async function openExportsFolder() {
     await service.openExportsFolder()
   }
 
+  const filteredSongs = useMemo(() => filterSongs(state.songs, state.libraryFilters), [state.songs, state.libraryFilters])
+  const activeSong = useMemo(() => selectActiveSong(state), [state.songs, state.activeSongId])
+  const activeDraft = useMemo(() => selectActiveDraft(state), [state.drafts, state.activeDraftId])
+  const activeSequence = useMemo(
+    () => selectActiveSequence(state),
+    [state.sequences, state.activeSequenceId],
+  )
+
   const value = {
     state,
-    filteredSongs: filterSongs(state.songs, state.libraryFilters),
-    activeSong: selectActiveSong(state),
-    activeDraft: selectActiveDraft(state),
-    activeSequence: selectActiveSequence(state),
+    filteredSongs,
+    activeSong,
+    activeDraft,
+    activeSequence,
     actions: {
       chooseWorkspace,
       importSongFiles,
@@ -161,8 +182,14 @@ export function AppProvider({ children }) {
       saveSequence,
       deleteSequence,
       deleteSong,
+      checkSequenceExport,
+      getSequenceExportStatuses,
+      openExportedSequence,
       exportSequence,
       openExportsFolder,
+      clearExportResult() {
+        dispatch({ type: 'export:clear' })
+      },
       setLibraryFilters(payload) {
         dispatch({ type: 'library:filters', payload })
       },
@@ -174,9 +201,6 @@ export function AppProvider({ children }) {
       },
       setActiveSequence(sequenceId) {
         dispatch({ type: 'sequence:active', payload: sequenceId })
-      },
-      clearNotice() {
-        dispatch({ type: 'notice:set', payload: '' })
       },
       clearError() {
         dispatch({ type: 'error:set', payload: '' })

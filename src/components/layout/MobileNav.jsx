@@ -6,7 +6,7 @@ const items = [
   { to: '/', label: 'Inicio', icon: LayoutDashboard },
   { to: '/biblioteca', label: 'Biblioteca', icon: Library },
   { to: '/subir', label: 'Carga', icon: CloudUpload },
-  { to: '/constructor-secuencias', label: 'Secuencias', icon: ListMusic },
+  { to: '/secuencias', label: 'Secuencias', icon: ListMusic },
 ]
 
 function MobileNav() {

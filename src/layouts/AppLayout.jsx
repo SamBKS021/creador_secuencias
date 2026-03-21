@@ -13,11 +13,6 @@ function AppLayout() {
       <div className="mx-auto flex max-w-[1500px]">
         <SideNav />
         <main className="min-h-screen flex-1 px-4 pb-28 pt-24 lg:px-8 lg:pb-10">
-          {state.notice ? (
-            <div className="mb-5 rounded-2xl bg-[rgba(171,200,245,0.3)] px-4 py-3 text-sm text-[var(--primary)]">
-              {state.notice}
-            </div>
-          ) : null}
           {state.error ? (
             <div className="mb-5 rounded-2xl bg-[rgba(186,26,26,0.08)] px-4 py-3 text-sm text-[var(--error)]">
               {state.error}

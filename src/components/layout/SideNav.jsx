@@ -13,7 +13,7 @@ const navItems = [
   { to: "/", label: "Inicio", icon: LayoutDashboard },
   { to: "/biblioteca", label: "Biblioteca de canciones", icon: Library },
   { to: "/subir", label: "Centro de carga", icon: CloudUpload },
-  { to: "/constructor-secuencias", label: "Constructor", icon: ListMusic }
+  { to: "/secuencias", label: "Secuencias", icon: ListMusic }
 ];
 
 function SideNav() {

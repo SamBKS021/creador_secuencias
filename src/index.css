@@ -94,3 +94,7 @@ button {
     radial-gradient(circle at right top, rgba(203, 231, 245, 0.28), transparent 24%),
     radial-gradient(circle at left 40%, rgba(240, 189, 127, 0.08), transparent 30%);
 }
+
+[data-sileo-viewport] {
+  z-index: 120 !important;
+}

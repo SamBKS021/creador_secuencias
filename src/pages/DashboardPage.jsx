@@ -111,9 +111,9 @@ function DashboardPage() {
             <Button
               className="mt-6 w-full"
               variant="outline"
-              onClick={() => navigate("/constructor-secuencias")}
+              onClick={() => navigate("/secuencias")}
             >
-              Abrir constructor
+              Ver secuencias
             </Button>
           </EditorialCard>
 

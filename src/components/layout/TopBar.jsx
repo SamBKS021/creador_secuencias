@@ -7,7 +7,7 @@ const topLinks = [
   { to: "/", label: "Inicio" },
   { to: "/biblioteca", label: "Biblioteca" },
   { to: "/subir", label: "Centro de carga" },
-  { to: "/constructor-secuencias", label: "Secuencias" }
+  { to: "/secuencias", label: "Secuencias" }
 ];
 
 function TopBar({ workspaceRoot, onChooseWorkspace }) {

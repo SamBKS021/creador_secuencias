@@ -4,11 +4,12 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
 use crate::errors::{AppError, AppResult};
-use crate::export::export_sequence_docx as build_docx_export;
+use crate::export::{export_sequence_docx as build_docx_export, export_sequence_docx_path};
 use crate::importer::{import_docx_batch, normalize_title};
 use crate::models::{
-    Draft, DraftResult, ExportResult, ImportBatchResult, OperationResult, Sequence, SequenceMutationResult, Song,
-    SongMutationResult, SongPayload, WorkspaceConfig, WorkspaceSelection,
+    Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult, Sequence,
+    SequenceExportStatus, SequenceMutationResult, Song, SongMutationResult, SongPayload, WorkspaceConfig,
+    WorkspaceSelection,
 };
 use crate::repository::{
     append_drafts, bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record,
@@ -23,7 +24,7 @@ fn file_path_to_pathbuf(file_path: FilePath) -> Option<PathBuf> {
 fn resolve_root_from_config(app: &AppHandle) -> AppResult<String> {
     let config = load_config(app)?;
     if config.workspace_root.is_empty() {
-        return Err(AppError::from("No hay carpeta raíz configurada."));
+        return Err(AppError::from("No hay carpeta raiz configurada."));
     }
     Ok(config.workspace_root)
 }
@@ -44,7 +45,7 @@ pub fn get_workspace_config(app: AppHandle) -> Result<WorkspaceConfig, String> {
 #[tauri::command]
 pub fn select_workspace_root(app: AppHandle) -> Result<WorkspaceSelection, String> {
     let Some(folder) = app.dialog().file().blocking_pick_folder() else {
-        return Err("Selección cancelada.".into());
+        return Err("Seleccion cancelada.".into());
     };
 
     let Some(root_path) = file_path_to_pathbuf(folder) else {
@@ -113,7 +114,7 @@ pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
                     title: suggested_title.clone(),
                     title_normalized: normalize_title(&suggested_title),
                     author: String::new(),
-                    category: "Contemporánea".into(),
+                    category: "Contemporanea".into(),
                     key: "C".into(),
                     tempo: 72,
                     lyrics: String::new(),
@@ -197,20 +198,91 @@ pub fn delete_song(app: AppHandle, song_id: String) -> Result<OperationResult, S
 }
 
 #[tauri::command]
-pub fn export_sequence_docx(app: AppHandle, sequence_id: String) -> Result<ExportResult, String> {
+pub fn check_sequence_docx_export(app: AppHandle, sequence_id: String) -> Result<ExportCheckResult, String> {
+    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+    let sequences: Vec<Sequence> = read_json(&paths.sequences_file).map_err(|error| error.to_string())?;
+
+    let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
+        return Err("No se encontro la secuencia a exportar.".into());
+    };
+
+    let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
+
+    Ok(ExportCheckResult {
+        exists: file_path.exists(),
+        file_path: file_path.to_string_lossy().to_string(),
+        file_name: file_path
+            .file_name()
+            .map(|item| item.to_string_lossy().to_string())
+            .unwrap_or_else(|| "secuencia.docx".into()),
+    })
+}
+
+#[tauri::command]
+pub fn get_sequence_export_statuses(app: AppHandle) -> Result<Vec<SequenceExportStatus>, String> {
+    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+    let sequences: Vec<Sequence> = read_json(&paths.sequences_file).map_err(|error| error.to_string())?;
+
+    Ok(sequences
+        .into_iter()
+        .map(|sequence| {
+            let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
+            SequenceExportStatus {
+                sequence_id: sequence.id,
+                exists: file_path.exists(),
+                file_path: file_path.to_string_lossy().to_string(),
+                file_name: file_path
+                    .file_name()
+                    .map(|item| item.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "secuencia.docx".into()),
+            }
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub fn open_exported_sequence_docx(app: AppHandle, sequence_id: String) -> Result<OperationResult, String> {
+    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+    let sequences: Vec<Sequence> = read_json(&paths.sequences_file).map_err(|error| error.to_string())?;
+
+    let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
+        return Err("No se encontro la secuencia solicitada.".into());
+    };
+
+    let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
+    if !file_path.exists() {
+        return Err("Todavia no existe un documento exportado para esta secuencia.".into());
+    }
+
+    open::that_detached(file_path).map_err(|error| error.to_string())?;
+    Ok(OperationResult { ok: true })
+}
+
+#[tauri::command]
+pub fn export_sequence_docx(app: AppHandle, sequence_id: String, overwrite: bool) -> Result<ExportResult, String> {
     let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
     let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
     let songs = load_songs(&paths).map_err(|error| error.to_string())?;
     let sequences: Vec<Sequence> = read_json(&paths.sequences_file).map_err(|error| error.to_string())?;
 
     let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
-        return Err("No se encontró la secuencia a exportar.".into());
+        return Err("No se encontro la secuencia a exportar.".into());
     };
+
+    let target_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
+    let already_exists = target_path.exists();
+    if already_exists && !overwrite {
+        return Err("El archivo de exportacion ya existe.".into());
+    }
 
     let file_path =
         build_docx_export(PathBuf::from(&root).as_path(), &sequence, &songs).map_err(|error| error.to_string())?;
+    open::that_detached(&file_path).map_err(|error| error.to_string())?;
 
-    Ok(export_metadata(&file_path))
+    Ok(export_metadata(&file_path, already_exists))
 }
 
 #[tauri::command]

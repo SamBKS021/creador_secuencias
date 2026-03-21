@@ -21,6 +21,9 @@ pub fn run() {
             commands::save_sequence,
             commands::delete_sequence,
             commands::delete_song,
+            commands::check_sequence_docx_export,
+            commands::get_sequence_export_statuses,
+            commands::open_exported_sequence_docx,
             commands::export_sequence_docx,
             commands::open_exports_folder,
         ])

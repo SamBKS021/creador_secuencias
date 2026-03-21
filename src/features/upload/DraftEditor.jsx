@@ -2,7 +2,16 @@ import { Save } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import EditorialCard from '../../components/ui/EditorialCard.jsx'
 
-function DraftEditor({ value, title, subtitle, submitLabel, submitDisabled = false, onChange, onSubmit }) {
+function DraftEditor({
+  value,
+  title,
+  subtitle,
+  submitLabel,
+  submitDisabled = false,
+  hideSubmitButton = false,
+  onChange,
+  onSubmit,
+}) {
   function updateField(field, fieldValue) {
     onChange({
       ...value,
@@ -20,7 +29,7 @@ function DraftEditor({ value, title, subtitle, submitLabel, submitDisabled = fal
 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Título</span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Titulo</span>
             <input
               className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none"
               value={value.title}
@@ -56,14 +65,14 @@ function DraftEditor({ value, title, subtitle, submitLabel, submitDisabled = fal
             />
           </label>
           <label className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Categoría</span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Categoria</span>
             <select
               className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none"
               value={value.category}
               onChange={(event) => updateField('category', event.target.value)}
             >
-              <option>Contemporánea</option>
-              <option>Adoración</option>
+              <option>Contemporanea</option>
+              <option>Adoracion</option>
               <option>Himno</option>
               <option>Destacada</option>
             </select>
@@ -73,27 +82,20 @@ function DraftEditor({ value, title, subtitle, submitLabel, submitDisabled = fal
         <label className="block space-y-2">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Letra</span>
           <textarea
-            className="min-h-[220px] w-full rounded-[24px] bg-[var(--surface-container-low)] px-4 py-4 outline-none"
+            className="min-h-[320px] w-full rounded-[24px] bg-[var(--surface-container-low)] px-4 py-4 outline-none"
             value={value.lyrics}
             onChange={(event) => updateField('lyrics', event.target.value)}
           />
         </label>
 
-        <label className="block space-y-2">
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Acordes</span>
-          <textarea
-            className="min-h-[160px] w-full rounded-[24px] bg-[var(--surface-container-low)] px-4 py-4 outline-none"
-            value={value.chords}
-            onChange={(event) => updateField('chords', event.target.value)}
-          />
-        </label>
-
-        <div className="flex justify-end">
-          <Button onClick={onSubmit} disabled={submitDisabled}>
-            <Save size={16} />
-            {submitLabel}
-          </Button>
-        </div>
+        {!hideSubmitButton ? (
+          <div className="flex justify-end">
+            <Button onClick={onSubmit} disabled={submitDisabled}>
+              <Save size={16} />
+              {submitLabel}
+            </Button>
+          </div>
+        ) : null}
       </div>
     </EditorialCard>
   )
