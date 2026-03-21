@@ -2,7 +2,7 @@ import { Save } from 'lucide-react'
 import Button from '../../components/ui/Button.jsx'
 import EditorialCard from '../../components/ui/EditorialCard.jsx'
 
-function DraftEditor({ value, title, subtitle, submitLabel, onChange, onSubmit }) {
+function DraftEditor({ value, title, subtitle, submitLabel, submitDisabled = false, onChange, onSubmit }) {
   function updateField(field, fieldValue) {
     onChange({
       ...value,
@@ -89,7 +89,7 @@ function DraftEditor({ value, title, subtitle, submitLabel, onChange, onSubmit }
         </label>
 
         <div className="flex justify-end">
-          <Button onClick={onSubmit}>
+          <Button onClick={onSubmit} disabled={submitDisabled}>
             <Save size={16} />
             {submitLabel}
           </Button>

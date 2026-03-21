@@ -87,6 +87,10 @@ export function AppProvider({ children }) {
     dispatch({ type: 'drafts:set', payload: result.drafts || [] })
   }
 
+  async function importSongDocxBatch() {
+    return service.importSongDocxBatch()
+  }
+
   async function saveSong(payload) {
     const result = await service.saveSong(payload)
     dispatch({
@@ -97,6 +101,7 @@ export function AppProvider({ children }) {
         draftId: payload.draftId,
       },
     })
+    return result
   }
 
   async function updateSong(payload) {
@@ -108,6 +113,7 @@ export function AppProvider({ children }) {
         stats: result.stats,
       },
     })
+    return result
   }
 
   async function saveSequence(payload) {
@@ -149,6 +155,7 @@ export function AppProvider({ children }) {
     actions: {
       chooseWorkspace,
       importSongFiles,
+      importSongDocxBatch,
       saveSong,
       updateSong,
       saveSequence,

@@ -38,8 +38,7 @@ export function filterSongs(songs, filters) {
         .toLowerCase()
         .includes(search)
 
-    const matchesCategory =
-      normalized.category === 'Todas' || song.category === normalized.category
+    const matchesCategory = normalized.category === 'Todas' || song.category === normalized.category
 
     const matchesTempo =
       normalized.tempo === 'Cualquiera' ||
@@ -73,6 +72,7 @@ export function createEmptySong(overrides = {}) {
   return {
     id: '',
     title: '',
+    titleNormalized: '',
     author: '',
     category: 'Contemporánea',
     key: 'C Major',
@@ -82,7 +82,8 @@ export function createEmptySong(overrides = {}) {
     tags: [],
     sourceFileName: '',
     sourcePath: '',
-    status: 'draft',
+    status: 'published',
+    playCount: 0,
     createdAt: '',
     updatedAt: '',
     ...overrides,

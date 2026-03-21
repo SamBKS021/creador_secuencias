@@ -1,17 +1,18 @@
 use std::path::PathBuf;
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 
 use crate::errors::{AppError, AppResult};
 use crate::export::export_sequence_docx as build_docx_export;
+use crate::importer::{import_docx_batch, normalize_title};
 use crate::models::{
-    Draft, DraftResult, ExportResult, OperationResult, Sequence, SequenceMutationResult, Song,
+    Draft, DraftResult, ExportResult, ImportBatchResult, OperationResult, Sequence, SequenceMutationResult, Song,
     SongMutationResult, SongPayload, WorkspaceConfig, WorkspaceSelection,
 };
 use crate::repository::{
     append_drafts, bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record,
-    export_metadata, resolve_paths, upsert_sequence, upsert_song,
+    export_metadata, load_songs, resolve_paths, upsert_sequence, upsert_song,
 };
 use crate::workspace::{ensure_workspace, load_config, read_json, save_config, update_recent_roots};
 
@@ -25,6 +26,14 @@ fn resolve_root_from_config(app: &AppHandle) -> AppResult<String> {
         return Err(AppError::from("No hay carpeta raíz configurada."));
     }
     Ok(config.workspace_root)
+}
+
+fn pick_docx_files(app: &AppHandle) -> Option<Vec<PathBuf>> {
+    app.dialog()
+        .file()
+        .add_filter("Documentos Word", &["docx"])
+        .blocking_pick_files()
+        .map(|files| files.into_iter().filter_map(file_path_to_pathbuf).collect::<Vec<_>>())
 }
 
 #[tauri::command]
@@ -52,9 +61,10 @@ pub fn select_workspace_root(app: AppHandle) -> Result<WorkspaceSelection, Strin
     Ok(WorkspaceSelection {
         workspace_root: root_string,
         created_structure: vec![
-            "library".into(),
-            "sequences".into(),
-            "drafts".into(),
+            "biblioteca".into(),
+            "secuencias".into(),
+            "recursos".into(),
+            ".ccp".into(),
             "exports".into(),
         ],
     })
@@ -77,12 +87,7 @@ pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
     let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
     let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
 
-    let Some(files) = app
-        .dialog()
-        .file()
-        .add_filter("Documentos Word", &["docx"])
-        .blocking_pick_files()
-    else {
+    let Some(files) = pick_docx_files(&app) else {
         return Ok(DraftResult {
             drafts: read_json(&paths.drafts_file).map_err(|error| error.to_string())?,
         });
@@ -90,24 +95,26 @@ pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
 
     let drafts = files
         .into_iter()
-        .filter_map(file_path_to_pathbuf)
         .map(|path| {
             let source_file_name = path
                 .file_name()
                 .map(|item| item.to_string_lossy().to_string())
                 .unwrap_or_else(|| "archivo.docx".into());
+            let suggested_title = source_file_name.trim_end_matches(".docx").replace('_', " ");
             let created_at = crate::workspace::now_iso();
+
             Draft {
                 id: uuid::Uuid::new_v4().to_string(),
                 source_file_name: source_file_name.clone(),
                 source_path: path.to_string_lossy().to_string(),
-                suggested_title: source_file_name.trim_end_matches(".docx").replace('_', " "),
+                suggested_title: suggested_title.clone(),
                 form_data: Song {
                     id: String::new(),
-                    title: source_file_name.trim_end_matches(".docx").replace('_', " "),
+                    title: suggested_title.clone(),
+                    title_normalized: normalize_title(&suggested_title),
                     author: String::new(),
                     category: "Contemporánea".into(),
-                    key: "G Major".into(),
+                    key: "C".into(),
                     tempo: 72,
                     lyrics: String::new(),
                     chords: String::new(),
@@ -129,17 +136,41 @@ pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
 }
 
 #[tauri::command]
+pub fn import_song_docx_batch(app: AppHandle) -> Result<ImportBatchResult, String> {
+    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+
+    let Some(files) = pick_docx_files(&app) else {
+        return Ok(ImportBatchResult {
+            documents: Vec::new(),
+        });
+    };
+
+    if files.iter().any(|path| {
+        path.extension()
+            .and_then(|extension| extension.to_str())
+            .map(|extension| !extension.eq_ignore_ascii_case("docx"))
+            .unwrap_or(true)
+    }) {
+        return Err("Solo se soportan archivos .docx.".into());
+    }
+
+    let songs = load_songs(&paths).map_err(|error| error.to_string())?;
+    import_docx_batch(&files, &songs).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 pub fn save_song(app: AppHandle, payload: SongPayload) -> Result<SongMutationResult, String> {
     let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
     let paths = resolve_paths(&root).map_err(|error| error.to_string())?;
-    upsert_song(&paths, &payload.song, payload.draft_id.as_deref()).map_err(|error| error.to_string())
+    upsert_song(&paths, &payload).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
 pub fn update_song(app: AppHandle, payload: SongPayload) -> Result<SongMutationResult, String> {
     let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
     let paths = resolve_paths(&root).map_err(|error| error.to_string())?;
-    upsert_song(&paths, &payload.song, payload.draft_id.as_deref()).map_err(|error| error.to_string())
+    upsert_song(&paths, &payload).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -169,7 +200,7 @@ pub fn delete_song(app: AppHandle, song_id: String) -> Result<OperationResult, S
 pub fn export_sequence_docx(app: AppHandle, sequence_id: String) -> Result<ExportResult, String> {
     let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
     let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-    let songs: Vec<Song> = read_json(&paths.songs_file).map_err(|error| error.to_string())?;
+    let songs = load_songs(&paths).map_err(|error| error.to_string())?;
     let sequences: Vec<Sequence> = read_json(&paths.sequences_file).map_err(|error| error.to_string())?;
 
     let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {

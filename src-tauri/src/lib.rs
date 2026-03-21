@@ -1,6 +1,7 @@
 mod commands;
 mod errors;
 mod export;
+mod importer;
 mod models;
 mod repository;
 mod workspace;
@@ -14,6 +15,7 @@ pub fn run() {
             commands::select_workspace_root,
             commands::bootstrap_app,
             commands::open_song_files,
+            commands::import_song_docx_batch,
             commands::save_song,
             commands::update_song,
             commands::save_sequence,

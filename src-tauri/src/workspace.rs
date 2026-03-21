@@ -5,20 +5,27 @@ use chrono::Utc;
 use tauri::{AppHandle, Manager};
 
 use crate::errors::{AppError, AppResult};
-use crate::models::{Draft, Preferences, Sequence, Song, Stats, WorkspaceConfig};
+use crate::models::{AppState, Draft, Preferences, Sequence, Song, Stats, WorkspaceConfig};
 
-pub const LIBRARY_DIR: &str = "library";
-pub const SEQUENCES_DIR: &str = "sequences";
-pub const DRAFTS_DIR: &str = "drafts";
+pub const LIBRARY_DIR: &str = "biblioteca";
+pub const SEQUENCES_DIR: &str = "secuencias";
+pub const RESOURCES_DIR: &str = "recursos";
+pub const CCP_DIR: &str = ".ccp";
 pub const EXPORTS_DIR: &str = "exports";
 
 #[derive(Debug, Clone)]
 pub struct WorkspacePaths {
     pub root: PathBuf,
-    pub songs_file: PathBuf,
+    pub library_dir: PathBuf,
     pub sequences_file: PathBuf,
     pub drafts_file: PathBuf,
+    pub app_state_file: PathBuf,
+    pub manifest_file: PathBuf,
+    pub sync_state_file: PathBuf,
     pub exports_dir: PathBuf,
+    pub legacy_songs_file: PathBuf,
+    pub legacy_sequences_file: PathBuf,
+    pub legacy_drafts_file: PathBuf,
 }
 
 pub fn now_iso() -> String {
@@ -59,12 +66,19 @@ pub fn save_config(app: &AppHandle, config: &WorkspaceConfig) -> AppResult<()> {
 }
 
 pub fn workspace_paths(root: &Path) -> WorkspacePaths {
+    let ccp_dir = root.join(CCP_DIR);
     WorkspacePaths {
         root: root.to_path_buf(),
-        songs_file: root.join(LIBRARY_DIR).join("songs.json"),
+        library_dir: root.join(LIBRARY_DIR),
         sequences_file: root.join(SEQUENCES_DIR).join("sequences.json"),
-        drafts_file: root.join(DRAFTS_DIR).join("drafts.json"),
+        drafts_file: ccp_dir.join("drafts.json"),
+        app_state_file: ccp_dir.join("app-state.json"),
+        manifest_file: ccp_dir.join("manifest.local.json"),
+        sync_state_file: ccp_dir.join("sync-state.json"),
         exports_dir: root.join(EXPORTS_DIR),
+        legacy_songs_file: root.join("library").join("songs.json"),
+        legacy_sequences_file: root.join("sequences").join("sequences.json"),
+        legacy_drafts_file: root.join("drafts").join("drafts.json"),
     }
 }
 
@@ -72,14 +86,17 @@ pub fn ensure_workspace(root: &Path) -> AppResult<WorkspacePaths> {
     let paths = workspace_paths(root);
 
     fs::create_dir_all(root)?;
-    fs::create_dir_all(root.join(LIBRARY_DIR))?;
+    fs::create_dir_all(&paths.library_dir)?;
     fs::create_dir_all(root.join(SEQUENCES_DIR))?;
-    fs::create_dir_all(root.join(DRAFTS_DIR))?;
+    fs::create_dir_all(root.join(RESOURCES_DIR))?;
+    fs::create_dir_all(root.join(CCP_DIR))?;
     fs::create_dir_all(root.join(EXPORTS_DIR))?;
 
-    ensure_json_file::<Vec<Song>>(&paths.songs_file)?;
     ensure_json_file::<Vec<Sequence>>(&paths.sequences_file)?;
     ensure_json_file::<Vec<Draft>>(&paths.drafts_file)?;
+    ensure_json_file::<AppState>(&paths.app_state_file)?;
+    ensure_object_file(&paths.manifest_file)?;
+    ensure_object_file(&paths.sync_state_file)?;
 
     Ok(paths)
 }
@@ -90,6 +107,14 @@ where
 {
     if !path.exists() {
         fs::write(path, serde_json::to_string_pretty(&T::default())?)?;
+    }
+
+    Ok(())
+}
+
+fn ensure_object_file(path: &Path) -> AppResult<()> {
+    if !path.exists() {
+        fs::write(path, "{}")?;
     }
 
     Ok(())

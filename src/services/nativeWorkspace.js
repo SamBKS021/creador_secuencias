@@ -16,22 +16,28 @@ export function openSongFiles() {
   return invoke('open_song_files')
 }
 
+export function importSongDocxBatch() {
+  return invoke('import_song_docx_batch')
+}
+
 export function saveSong(payload) {
-  const { draftId, ...song } = payload
+  const { draftId, contentDraft, ...song } = payload
   return invoke('save_song', {
     payload: {
       song,
       draftId: draftId || null,
+      contentDraft: contentDraft || null,
     },
   })
 }
 
 export function updateSong(payload) {
-  const { draftId, ...song } = payload
+  const { draftId, contentDraft, ...song } = payload
   return invoke('update_song', {
     payload: {
       song,
       draftId: draftId || null,
+      contentDraft: contentDraft || null,
     },
   })
 }

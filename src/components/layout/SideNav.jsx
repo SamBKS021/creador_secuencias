@@ -22,10 +22,10 @@ function SideNav() {
       <div className="space-y-8">
         <div className="space-y-1 px-2">
           <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[var(--primary)]">
-            The Liturgy
+            Centro Musical
           </h2>
           <p className="font-headline text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Music Management
+            Gestor de Cantos
           </p>
         </div>
 
@@ -36,15 +36,20 @@ function SideNav() {
               to={to}
               className={({ isActive }) =>
                 [
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 font-headline text-sm font-semibold transition",
+                  "group relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 font-headline text-sm font-semibold transition-all duration-300 ease-out",
+                  "before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-[var(--primary)] before:transition-all before:duration-300 before:ease-out",
                   isActive
-                    ? "bg-white text-[var(--primary)] shadow-[inset_3px_0_0_0_var(--primary)]"
-                    : "text-slate-500 hover:bg-white/70 hover:text-[var(--primary)]"
+                    ? "translate-x-1 bg-white text-[var(--primary)] shadow-[0_14px_30px_-24px_rgba(0,36,70,0.45)] before:opacity-100 before:translate-x-0"
+                    : "text-slate-500 before:-translate-x-2 before:opacity-0 hover:translate-x-1 hover:bg-white/70 hover:text-[var(--primary)]"
                 ].join(" ")
               }
             >
-              {createElement(Icon, { size: 18 })}
-              <span>{label}</span>
+              <span className="relative z-10 transition-transform duration-300 ease-out group-hover:scale-105">
+                {createElement(Icon, { size: 18 })}
+              </span>
+              <span className="relative z-10 transition-transform duration-300 ease-out group-hover:translate-x-0.5">
+                {label}
+              </span>
             </NavLink>
           ))}
         </nav>

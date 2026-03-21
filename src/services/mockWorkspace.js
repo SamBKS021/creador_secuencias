@@ -5,7 +5,7 @@ const DATA_KEY = 'creador-secuencias-data'
 
 const demoSongs = [
   {
-    id: 'song-1',
+    id: 'canto-0001',
     title: 'Amazing Grace',
     author: 'John Newton',
     category: 'Himno',
@@ -22,7 +22,7 @@ const demoSongs = [
     updatedAt: '2026-03-18T10:00:00.000Z',
   },
   {
-    id: 'song-2',
+    id: 'canto-0002',
     title: 'Living Waters',
     author: 'Kristene DiMarco',
     category: 'Adoración',
@@ -39,9 +39,9 @@ const demoSongs = [
     updatedAt: '2026-03-17T18:00:00.000Z',
   },
   {
-    id: 'song-3',
+    id: 'canto-0003',
     title: 'Behold the Lamb of God',
-    author: 'The Porter’s Gate',
+    author: "The Porter's Gate",
     category: 'Destacada',
     key: 'A Minor',
     tempo: 64,
@@ -56,7 +56,7 @@ const demoSongs = [
     updatedAt: '2026-03-18T08:00:00.000Z',
   },
   {
-    id: 'song-4',
+    id: 'canto-0004',
     title: 'Resucitando',
     author: 'Elevation Worship',
     category: 'Contemporánea',
@@ -73,7 +73,7 @@ const demoSongs = [
     updatedAt: '2026-03-14T08:00:00.000Z',
   },
   {
-    id: 'song-5',
+    id: 'canto-0005',
     title: 'It Is Well',
     author: 'Horatio Spafford',
     category: 'Himno',
@@ -90,7 +90,7 @@ const demoSongs = [
     updatedAt: '2026-03-10T08:00:00.000Z',
   },
   {
-    id: 'song-6',
+    id: 'canto-0006',
     title: 'Gratitud',
     author: 'Brandon Lake',
     category: 'Adoración',
@@ -109,14 +109,14 @@ const demoSongs = [
 ]
 
 const demoSequence = {
-  id: 'sequence-1',
+  id: 'secuencia-0001',
   title: 'Adoración Matutina',
   serviceDate: '2026-03-23',
   notes: 'Abrir con lectura congregacional y transiciones suaves.',
   items: [
-    { id: 'item-1', songId: 'song-1', order: 1, transitionType: 'Entrada suave' },
-    { id: 'item-2', songId: 'song-2', order: 2, transitionType: 'Crossfade' },
-    { id: 'item-3', songId: 'song-6', order: 3, transitionType: 'Vamp instrumental' },
+    { id: 'item-1', songId: 'canto-0001', order: 1, transitionType: 'Entrada suave' },
+    { id: 'item-2', songId: 'canto-0002', order: 2, transitionType: 'Crossfade' },
+    { id: 'item-3', songId: 'canto-0006', order: 3, transitionType: 'Vamp instrumental' },
   ],
   createdAt: '2026-03-18T12:00:00.000Z',
   updatedAt: '2026-03-19T08:45:00.000Z',
@@ -124,6 +124,16 @@ const demoSequence = {
 
 function nowIso() {
   return new Date().toISOString()
+}
+
+function normalizeTitle(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function readConfig() {
@@ -152,6 +162,10 @@ function defaultData() {
     songs: demoSongs,
     sequences: [demoSequence],
     drafts: [],
+    appState: {
+      nextSongId: 7,
+      nextSequenceId: 2,
+    },
   }
 }
 
@@ -193,7 +207,7 @@ export async function selectWorkspaceRoot() {
 
   return {
     workspaceRoot,
-    createdStructure: ['library', 'sequences', 'drafts', 'exports'],
+    createdStructure: ['biblioteca', 'secuencias', 'recursos', '.ccp', 'exports'],
   }
 }
 
@@ -212,49 +226,118 @@ export async function bootstrapApp(workspaceRoot) {
 }
 
 export async function openSongFiles() {
-  const data = readData()
-  const createdAt = nowIso()
-  const sourceFileName = `Cancion_${data.drafts.length + 1}.docx`
-  const draft = {
-    id: `draft-${Date.now()}`,
-    sourceFileName,
-    sourcePath: '',
-    suggestedTitle: 'Nueva canción importada',
-    formData: {
-      id: '',
-      title: 'Nueva canción importada',
-      author: '',
-      category: 'Contemporánea',
-      key: 'G Major',
-      tempo: 72,
-      lyrics: '',
-      chords: '',
-      tags: [],
-      sourceFileName,
-      sourcePath: '',
-      status: 'draft',
-      createdAt,
-      updatedAt: createdAt,
-    },
-    createdAt,
+  return { drafts: [] }
+}
+
+export async function importSongDocxBatch() {
+  return {
+    documents: [
+      {
+        sourceFileName: 'secuencia-demo.docx',
+        sourcePath: 'demo/secuencia-demo.docx',
+        warnings: [],
+        candidates: [
+          {
+            candidateId: 'candidate-demo-1',
+            sourceFileName: 'secuencia-demo.docx',
+            sourcePath: 'demo/secuencia-demo.docx',
+            order: 1,
+            titleDetected: 'Dios Poderoso',
+            titleNormalized: normalizeTitle('Dios Poderoso'),
+            authorDetected: '',
+            keyDetected: 'Bb',
+            lyrics: 'VERSO 1\n¿Quién sino el Señor las estrellas creó?\nY su luz limitó?',
+            chords: 'VERSO 1\nGm                          Bb',
+            contentDraft: {
+              version: 1,
+              sections: [
+                {
+                  id: 'section-temp-1',
+                  sectionType: 'verse',
+                  label: 'VERSO 1',
+                  lines: [
+                    {
+                      id: 'line-temp-1',
+                      kind: 'lyric',
+                      text: '¿Quién sino el Señor las estrellas creó?',
+                      chords: [
+                        { symbol: 'Gm', offset: 0 },
+                        { symbol: 'Bb', offset: 29 },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            matchedSongId: 'canto-0004',
+            matchedSongTitle: 'Resucitando',
+            matchType: '',
+            confidence: 0.72,
+            warnings: [],
+          },
+          {
+            candidateId: 'candidate-demo-2',
+            sourceFileName: 'secuencia-demo.docx',
+            sourcePath: 'demo/secuencia-demo.docx',
+            order: 2,
+            titleDetected: 'Invencible',
+            titleNormalized: normalizeTitle('Invencible'),
+            authorDetected: '',
+            keyDetected: 'Dm',
+            lyrics: 'CORO\nInvencible, Él ha resucitado',
+            chords: 'CORO\nDm      Bb   C',
+            contentDraft: {
+              version: 1,
+              sections: [
+                {
+                  id: 'section-temp-1',
+                  sectionType: 'chorus',
+                  label: 'CORO',
+                  lines: [
+                    {
+                      id: 'line-temp-1',
+                      kind: 'lyric',
+                      text: 'Invencible, Él ha resucitado',
+                      chords: [
+                        { symbol: 'Dm', offset: 0 },
+                        { symbol: 'Bb', offset: 8 },
+                        { symbol: 'C', offset: 13 },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            matchedSongId: '',
+            matchedSongTitle: '',
+            matchType: '',
+            confidence: 0.81,
+            warnings: [],
+          },
+        ],
+      },
+    ],
   }
-
-  data.drafts = [draft, ...data.drafts]
-  writeData(data)
-
-  return { drafts: data.drafts }
 }
 
 export async function saveSong(payload) {
   const data = readData()
   const timestamp = nowIso()
+  const isNewSong = !payload.id
+  const songId = payload.id || `canto-${String(data.appState.nextSongId).padStart(4, '0')}`
+
   const song = {
     playCount: 0,
     ...payload,
-    id: payload.id || `song-${Date.now()}`,
+    id: songId,
+    titleNormalized: normalizeTitle(payload.title),
     status: 'published',
     createdAt: payload.createdAt || timestamp,
     updatedAt: timestamp,
+  }
+
+  if (isNewSong) {
+    data.appState.nextSongId += 1
   }
 
   const existingIndex = data.songs.findIndex((item) => item.id === song.id)
@@ -262,10 +345,6 @@ export async function saveSong(payload) {
     data.songs[existingIndex] = song
   } else {
     data.songs.unshift(song)
-  }
-
-  if (payload.draftId) {
-    data.drafts = data.drafts.filter((draft) => draft.id !== payload.draftId)
   }
 
   writeData(data)
@@ -283,9 +362,11 @@ export async function updateSong(payload) {
 export async function saveSequence(payload) {
   const data = readData()
   const timestamp = nowIso()
+  const isNewSequence = !payload.id
+
   const sequence = {
     ...payload,
-    id: payload.id || `sequence-${Date.now()}`,
+    id: payload.id || `secuencia-${String(data.appState.nextSequenceId).padStart(4, '0')}`,
     createdAt: payload.createdAt || timestamp,
     updatedAt: timestamp,
     items: (payload.items || []).map((item, index) => ({
@@ -293,6 +374,10 @@ export async function saveSequence(payload) {
       ...item,
       order: index + 1,
     })),
+  }
+
+  if (isNewSequence) {
+    data.appState.nextSequenceId += 1
   }
 
   const existingIndex = data.sequences.findIndex((item) => item.id === sequence.id)
