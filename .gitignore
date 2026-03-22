@@ -14,6 +14,7 @@ dist-ssr
 .env
 src-tauri/updater.key
 src-tauri/updater.key.pub
+src-tauri/oauth.defaults.json
 
 # Editor directories and files
 .vscode/*

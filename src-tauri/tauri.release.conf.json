@@ -4,6 +4,9 @@
     "icon": [
       "icons/icon.ico"
     ],
+    "resources": [
+      "oauth.defaults.json"
+    ],
     "createUpdaterArtifacts": true
   },
   "plugins": {

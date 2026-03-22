@@ -1,6 +1,6 @@
 [package]
 name = "creador_de_secuencias"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 
 [lib]
@@ -10,6 +10,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 dotenvy = "0.15"
+serde_json = "1"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }

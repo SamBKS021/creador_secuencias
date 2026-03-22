@@ -6,7 +6,7 @@ use keyring::Entry;
 use reqwest::blocking::Client;
 use reqwest::Url;
 use serde::Deserialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 use crate::drive_client::fetch_account_email;
 use crate::errors::{AppError, AppResult};
@@ -99,14 +99,42 @@ fn load_or_seed_oauth_config(app: &AppHandle) -> AppResult<OAuthLocalConfig> {
         .trim()
         .to_string();
 
-    if client_id.is_empty() || client_secret.is_empty() {
+    if !client_id.is_empty() && !client_secret.is_empty() {
+        oauth_config.client_id = client_id;
+        oauth_config.client_secret = client_secret;
+        save_oauth_config(app, &oauth_config)?;
         return Ok(oauth_config);
     }
 
-    oauth_config.client_id = client_id;
-    oauth_config.client_secret = client_secret;
-    save_oauth_config(app, &oauth_config)?;
+    if let Some(bundled) = load_bundled_oauth_config(app)? {
+        oauth_config.client_id = bundled.client_id;
+        oauth_config.client_secret = bundled.client_secret;
+        save_oauth_config(app, &oauth_config)?;
+    }
+
     Ok(oauth_config)
+}
+
+fn load_bundled_oauth_config(app: &AppHandle) -> AppResult<Option<OAuthLocalConfig>> {
+    let Some(resource_dir) = app.path().resource_dir().ok() else {
+        return Ok(None);
+    };
+
+    let path = resource_dir.join("oauth.defaults.json");
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let config = serde_json::from_str::<OAuthLocalConfig>(
+        &std::fs::read_to_string(path).map_err(|error| AppError::from(error.to_string().as_str()))?,
+    )
+    .map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    if config.client_id.trim().is_empty() || config.client_secret.trim().is_empty() {
+        return Ok(None);
+    }
+
+    Ok(Some(config))
 }
 
 fn wait_for_oauth_code(client_id: &str) -> AppResult<(String, String)> {
