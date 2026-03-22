@@ -2,7 +2,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react'
 
-function SequenceItemCard({ item, song, index, onRemove, onMove, canMoveUp, canMoveDown }) {
+function SequenceItemCard({ item, song, index, motionDelay = 0, onRemove, onMove, canMoveUp, canMoveDown }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.id,
   })
@@ -13,8 +13,9 @@ function SequenceItemCard({ item, song, index, onRemove, onMove, canMoveUp, canM
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
+        '--motion-delay': `${motionDelay}ms`,
       }}
-      className="rounded-[20px] bg-white px-4 py-4 editorial-shadow"
+      className="motion-list-item rounded-[20px] bg-white px-4 py-4 editorial-shadow"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">

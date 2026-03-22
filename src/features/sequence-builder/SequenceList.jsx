@@ -22,6 +22,7 @@ function SequenceList({ items, pageOffset = 0, totalItems = 0, songs, onDragEnd,
                 key={item.id}
                 item={item}
                 index={absoluteIndex + 1}
+                motionDelay={index * 45}
                 song={songs.find((song) => song.id === item.songId)}
                 onRemove={onRemove}
                 onMove={onMove}

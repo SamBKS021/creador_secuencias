@@ -15,8 +15,8 @@ function DashboardPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="Define una carpeta raíz para comenzar"
-        description="Selecciona una carpeta pensada para sincronizarse con Google Drive. La biblioteca, secuencias, borradores y exportaciones vivirán allí."
+        title="Define una carpeta raiz para comenzar"
+        description="Selecciona una carpeta pensada para sincronizarse con Google Drive. La biblioteca, secuencias, borradores y exportaciones viviran alli."
         action={
           <Button onClick={actions.chooseWorkspace}>
             Elegir carpeta de trabajo
@@ -30,7 +30,7 @@ function DashboardPage() {
     <div className="space-y-8">
       <PageHeader
         title="Panorama Actual"
-        description="Tu biblioteca está sincronizada y lista para el próximo servicio. Usa esta vista para revisar repertorio reciente, secuencias próximas y accesos rápidos."
+        description="Tu biblioteca esta sincronizada y lista para el proximo servicio. Usa esta vista para revisar repertorio reciente, secuencias proximas y accesos rapidos."
       />
 
       <section className="grid gap-4 md:grid-cols-2">
@@ -88,25 +88,31 @@ function DashboardPage() {
         <div className="space-y-6">
           <EditorialCard>
             <h2 className="font-headline text-3xl font-extrabold text-[var(--primary)]">
-              Próximas secuencias
+              Proximas secuencias
             </h2>
             <div className="mt-5 space-y-4">
-              {state.stats.upcomingSequences.map((sequence) => (
-                <div
-                  key={sequence.id}
-                  className="rounded-2xl bg-[var(--surface-container-low)] p-4"
-                >
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[rgba(201,154,95,1)]">
-                    {formatDisplayDate(sequence.serviceDate)}
-                  </p>
-                  <h3 className="font-headline mt-2 text-xl font-extrabold text-[var(--primary)]">
-                    {sequence.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
-                    {sequence.items.length} canciones programadas
-                  </p>
+              {state.stats.upcomingSequences.length ? (
+                state.stats.upcomingSequences.map((sequence) => (
+                  <div
+                    key={sequence.id}
+                    className="rounded-2xl bg-[var(--surface-container-low)] p-4"
+                  >
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[rgba(201,154,95,1)]">
+                      {formatDisplayDate(sequence.serviceDate)}
+                    </p>
+                    <h3 className="font-headline mt-2 text-xl font-extrabold text-[var(--primary)]">
+                      {sequence.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-[var(--on-surface-variant)]">
+                      {sequence.items.length} canciones programadas
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl bg-[var(--surface-container-low)] p-4 text-sm text-[var(--on-surface-variant)]">
+                  No hay secuencias programadas para hoy o fechas futuras.
                 </div>
-              ))}
+              )}
             </div>
             <Button
               className="mt-6 w-full"

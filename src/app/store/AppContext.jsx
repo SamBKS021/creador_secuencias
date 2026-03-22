@@ -90,6 +90,18 @@ export function AppProvider({ children }) {
     return service.importSongDocxBatch()
   }
 
+  async function saveSongCategories(categories) {
+    const preferences = await service.saveSongCategories(categories)
+    dispatch({ type: 'preferences:set', payload: preferences })
+    return preferences
+  }
+
+  async function saveMotionMode(motionMode) {
+    const preferences = await service.saveMotionMode(motionMode)
+    dispatch({ type: 'preferences:set', payload: preferences })
+    return preferences
+  }
+
   async function saveSong(payload) {
     const result = await service.saveSong(payload)
     dispatch({
@@ -177,6 +189,8 @@ export function AppProvider({ children }) {
       chooseWorkspace,
       importSongFiles,
       importSongDocxBatch,
+      saveSongCategories,
+      saveMotionMode,
       saveSong,
       updateSong,
       saveSequence,

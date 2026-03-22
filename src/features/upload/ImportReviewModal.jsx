@@ -46,6 +46,7 @@ function ImportReviewModal({
   onOverwriteExisting,
   onSaveNew,
   saving,
+  categories,
 }) {
   if (!open || !reviewItem) {
     return null
@@ -126,6 +127,7 @@ function ImportReviewModal({
                 title="Revisar canto detectado"
                 subtitle="Ajusta titulo, autor, tonalidad y letra antes de decidir si lo guardas como nuevo o usas una coincidencia existente."
                 value={form}
+                categories={categories}
                 onChange={onChange}
                 onSubmit={onSaveNew}
                 submitLabel={saving ? 'Guardando...' : candidate.matchedSongId ? 'Guardar como nuevo' : 'Guardar'}

@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useAppContext } from '../app/store/AppContext.jsx'
 import MobileNav from '../components/layout/MobileNav.jsx'
 import SideNav from '../components/layout/SideNav.jsx'
@@ -6,9 +6,10 @@ import TopBar from '../components/layout/TopBar.jsx'
 
 function AppLayout() {
   const { state, actions } = useAppContext()
+  const location = useLocation()
 
   return (
-    <div className="page-shell min-h-screen">
+    <div className="page-shell min-h-screen" data-motion-mode={state.preferences.motionMode || 'normal'}>
       <TopBar workspaceRoot={state.workspaceRoot} onChooseWorkspace={actions.chooseWorkspace} />
       <div className="mx-auto flex max-w-[1500px]">
         <SideNav />
@@ -18,7 +19,9 @@ function AppLayout() {
               {state.error}
             </div>
           ) : null}
-          <Outlet />
+          <div key={location.pathname} className="motion-page">
+            <Outlet />
+          </div>
         </main>
       </div>
       <MobileNav />

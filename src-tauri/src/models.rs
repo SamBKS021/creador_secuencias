@@ -1,12 +1,31 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct Preferences {
     pub compact_sidebar: bool,
+    pub song_categories: Vec<String>,
+    pub motion_mode: String,
+}
+
+impl Default for Preferences {
+    fn default() -> Self {
+        Self {
+            compact_sidebar: false,
+            song_categories: vec![
+                "Contemporanea".into(),
+                "Adoracion".into(),
+                "Himno".into(),
+                "Destacada".into(),
+            ],
+            motion_mode: "normal".into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceConfig {
     pub workspace_root: String,

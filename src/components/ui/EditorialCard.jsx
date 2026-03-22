@@ -4,7 +4,7 @@ function EditorialCard({ className, children }) {
   return (
     <section
       className={clsx(
-        'rounded-[24px] bg-[var(--surface-container-lowest)] p-5 editorial-shadow',
+        'motion-card rounded-[24px] bg-[var(--surface-container-lowest)] p-5 editorial-shadow transition-transform duration-300',
         className,
       )}
     >

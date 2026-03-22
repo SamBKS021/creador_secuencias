@@ -8,7 +8,7 @@ use crate::export::{export_sequence_docx as build_docx_export, export_sequence_d
 use crate::importer::{import_docx_batch, normalize_title};
 use crate::models::{
     Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult, Sequence,
-    SequenceExportStatus, SequenceMutationResult, Song, SongMutationResult, SongPayload, WorkspaceConfig,
+    Preferences, SequenceExportStatus, SequenceMutationResult, Song, SongMutationResult, SongPayload, WorkspaceConfig,
     WorkspaceSelection,
 };
 use crate::repository::{
@@ -37,9 +37,51 @@ fn pick_docx_files(app: &AppHandle) -> Option<Vec<PathBuf>> {
         .map(|files| files.into_iter().filter_map(file_path_to_pathbuf).collect::<Vec<_>>())
 }
 
+fn sanitize_song_categories(categories: Vec<String>) -> Vec<String> {
+    let mut sanitized = categories
+        .into_iter()
+        .map(|category| category.trim().to_string())
+        .filter(|category| !category.is_empty())
+        .fold(Vec::<String>::new(), |mut acc, category| {
+            if !acc.iter().any(|item| item.eq_ignore_ascii_case(&category)) {
+                acc.push(category);
+            }
+            acc
+        });
+
+    if sanitized.is_empty() {
+        sanitized = Preferences::default().song_categories;
+    }
+
+    sanitized
+}
+
 #[tauri::command]
 pub fn get_workspace_config(app: AppHandle) -> Result<WorkspaceConfig, String> {
     load_config(&app).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn save_song_categories(app: AppHandle, categories: Vec<String>) -> Result<Preferences, String> {
+    let mut config = load_config(&app).map_err(|error| error.to_string())?;
+    config.preferences.song_categories = sanitize_song_categories(categories);
+    save_config(&app, &config).map_err(|error| error.to_string())?;
+    Ok(config.preferences)
+}
+
+#[tauri::command]
+pub fn save_motion_mode(app: AppHandle, motion_mode: String) -> Result<Preferences, String> {
+    let normalized = match motion_mode.trim().to_lowercase().as_str() {
+        "reduced" => "reduced",
+        "off" => "off",
+        _ => "normal",
+    }
+    .to_string();
+
+    let mut config = load_config(&app).map_err(|error| error.to_string())?;
+    config.preferences.motion_mode = normalized;
+    save_config(&app, &config).map_err(|error| error.to_string())?;
+    Ok(config.preferences)
 }
 
 #[tauri::command]

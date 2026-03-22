@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, Plus, Save } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { sileo } from 'sileo'
 import { useAppContext } from '../app/store/AppContext.jsx'
 import Button from '../components/ui/Button.jsx'
 import EditorialCard from '../components/ui/EditorialCard.jsx'
@@ -8,9 +9,20 @@ import PageHeader from '../components/ui/PageHeader.jsx'
 import FilterBar from '../features/library/FilterBar.jsx'
 import SongCard from '../features/library/SongCard.jsx'
 import DraftEditor from '../features/upload/DraftEditor.jsx'
-import { createEmptySong } from '../utils/workspace.js'
+import { getSongCategories } from '../utils/workspace.js'
 
 const SONGS_PER_PAGE = 6
+
+function buildEditableSnapshot(song) {
+  return JSON.stringify({
+    title: song?.title || '',
+    author: song?.author || '',
+    category: song?.category || '',
+    key: song?.key || '',
+    tempo: Number(song?.tempo || 0),
+    lyrics: song?.lyrics || '',
+  })
+}
 
 function Pagination({ page, totalPages, onChange }) {
   if (totalPages <= 1) {
@@ -61,7 +73,7 @@ function LibraryPage() {
   const [form, setForm] = useState(activeSong)
   const [page, setPage] = useState(1)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setForm({
       ...activeSong,
       chords: '',
@@ -83,6 +95,19 @@ function LibraryPage() {
     return filteredSongs.slice(start, start + SONGS_PER_PAGE)
   }, [filteredSongs, page])
 
+  const songCategories = useMemo(
+    () => getSongCategories(state.preferences),
+    [state.preferences],
+  )
+
+  const hasPendingChanges = useMemo(() => {
+    if (!form.id || !activeSong?.id) {
+      return false
+    }
+
+    return buildEditableSnapshot(form) !== buildEditableSnapshot(activeSong)
+  }, [activeSong, form])
+
   if (!state.workspaceRoot) {
     return (
       <EmptyState
@@ -98,20 +123,13 @@ function LibraryPage() {
       <PageHeader
         title="Biblioteca de canciones"
         description="Administra repertorio, tonalidades, tempo y letra con una estructura lista para crecer hacia una app de escritorio completa."
-        actions={
-          <Button
-            onClick={() => {
-              actions.setActiveSong('')
-              setForm(createEmptySong())
-            }}
-          >
-            <Plus size={16} />
-            Nueva cancion
-          </Button>
-        }
       />
 
-      <FilterBar filters={state.libraryFilters} onChange={actions.setLibraryFilters} />
+      <FilterBar
+        filters={state.libraryFilters}
+        categories={songCategories}
+        onChange={actions.setLibraryFilters}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
         <div className="space-y-5">
@@ -137,27 +155,32 @@ function LibraryPage() {
         </div>
 
         <div className="space-y-4">
-          <DraftEditor
-            title={form.id ? 'Editar cancion' : 'Nueva cancion'}
-            subtitle="Actualiza metadatos, letra y tono. La persistencia depende del `id` interno, no de rutas absolutas."
-            value={form}
-            onChange={setForm}
-            onSubmit={() => {
-              if (form.id) {
-                actions.updateSong(form)
-                return
-              }
-              actions.saveSong(form)
-            }}
-            submitLabel={form.id ? 'Guardar cambios' : 'Agregar a biblioteca'}
-          />
+          {form.id ? (
+            <DraftEditor
+              title="Editar cancion"
+              subtitle="Actualiza metadatos, letra y tono del canto seleccionado."
+              value={form}
+              categories={songCategories}
+              onChange={setForm}
+              onSubmit={async () => {
+                if (!hasPendingChanges) {
+                  return
+                }
 
-          {!form.id ? (
-            <EditorialCard className="flex items-center gap-3 text-sm text-[var(--on-surface-variant)]">
-              <Save size={16} className="text-[var(--primary)]" />
-              Crea una ficha nueva o selecciona una cancion existente para editarla.
+                await actions.updateSong(form)
+                sileo.success({
+                  title: 'Canto actualizado',
+                  description: `${form.title || 'El canto'} se guardo correctamente en la biblioteca.`,
+                })
+              }}
+              submitLabel="Guardar cambios"
+              submitDisabled={!hasPendingChanges}
+            />
+          ) : (
+            <EditorialCard className="text-sm leading-7 text-[var(--on-surface-variant)]">
+              Selecciona un canto de la biblioteca para editarlo. Las altas nuevas se realizan desde el Centro de carga.
             </EditorialCard>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

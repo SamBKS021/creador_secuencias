@@ -1,4 +1,5 @@
 import { Save } from 'lucide-react'
+import AppSelect from '../../components/ui/AppSelect.jsx'
 import Button from '../../components/ui/Button.jsx'
 import EditorialCard from '../../components/ui/EditorialCard.jsx'
 
@@ -9,6 +10,7 @@ function DraftEditor({
   submitLabel,
   submitDisabled = false,
   hideSubmitButton = false,
+  categories = [],
   onChange,
   onSubmit,
 }) {
@@ -18,6 +20,8 @@ function DraftEditor({
       [field]: fieldValue,
     })
   }
+
+  const categoryOptions = [...new Set([...categories, value.category].filter(Boolean))]
 
   return (
     <EditorialCard className="h-full">
@@ -66,16 +70,12 @@ function DraftEditor({
           </label>
           <label className="space-y-2">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Categoria</span>
-            <select
-              className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none"
+            <AppSelect
+              tone="surface"
+              options={categoryOptions}
               value={value.category}
-              onChange={(event) => updateField('category', event.target.value)}
-            >
-              <option>Contemporanea</option>
-              <option>Adoracion</option>
-              <option>Himno</option>
-              <option>Destacada</option>
-            </select>
+              onChange={(nextValue) => updateField('category', nextValue)}
+            />
           </label>
         </div>
 

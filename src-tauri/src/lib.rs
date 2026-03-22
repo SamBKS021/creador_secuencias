@@ -12,6 +12,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_workspace_config,
+            commands::save_song_categories,
+            commands::save_motion_mode,
             commands::select_workspace_root,
             commands::bootstrap_app,
             commands::open_song_files,

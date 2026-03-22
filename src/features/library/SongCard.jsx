@@ -26,7 +26,7 @@ function SongCard({ song, selected, onSelect, onDelete }) {
   return (
     <button
       className={[
-        'group relative rounded-[24px] bg-[var(--surface-container-lowest)] p-6 text-left editorial-shadow transition hover:-translate-y-1',
+        'motion-card group relative rounded-[24px] bg-[var(--surface-container-lowest)] p-6 text-left editorial-shadow transition hover:-translate-y-1',
         selected ? 'cta-gradient text-white' : '',
       ].join(' ')}
       onClick={onSelect}

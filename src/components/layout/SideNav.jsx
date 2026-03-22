@@ -56,10 +56,20 @@ function SideNav() {
       </div>
 
       <div className="mt-auto space-y-2 pt-6">
-        <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-500 transition hover:bg-white/70">
+        <NavLink
+          to="/ajustes"
+          className={({ isActive }) =>
+            [
+              "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition",
+              isActive
+                ? "bg-white text-[var(--primary)] shadow-[0_14px_30px_-24px_rgba(0,36,70,0.45)]"
+                : "text-slate-500 hover:bg-white/70",
+            ].join(" ")
+          }
+        >
           <Settings size={18} />
           Ajustes
-        </button>
+        </NavLink>
         <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-500 transition hover:bg-white/70">
           <FolderCog size={18} />
           Soporte

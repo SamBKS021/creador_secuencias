@@ -5,12 +5,32 @@ const DEFAULT_FILTERS = {
   sortBy: 'date-desc',
 }
 
+export const defaultSongCategories = ['Contemporanea', 'Adoracion', 'Himno', 'Destacada']
+
+export function getSongCategories(preferences) {
+  const source = preferences?.songCategories
+  if (!Array.isArray(source) || !source.length) {
+    return defaultSongCategories
+  }
+
+  return source
+    .map((category) => String(category || '').trim())
+    .filter(Boolean)
+    .filter((category, index, collection) => collection.indexOf(category) === index)
+}
+
 export function buildStats(songs, sequences) {
+  const now = new Date()
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate(),
+  ).padStart(2, '0')}`
+
   const recentUploads = [...songs]
     .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
     .slice(0, 3)
 
   const upcomingSequences = [...sequences]
+    .filter((sequence) => String(sequence.serviceDate || '') >= todayKey)
     .sort((a, b) => String(a.serviceDate || '').localeCompare(String(b.serviceDate || '')))
     .slice(0, 3)
 
@@ -44,7 +64,7 @@ export function filterSongs(songs, filters) {
       normalized.tempo === 'Cualquiera' ||
       (normalized.tempo === 'Lento' && Number(song.tempo) < 70) ||
       (normalized.tempo === 'Medio' && Number(song.tempo) >= 70 && Number(song.tempo) <= 110) ||
-      (normalized.tempo === 'Rápido' && Number(song.tempo) > 110)
+      (normalized.tempo === 'Rapido' && Number(song.tempo) > 110)
 
     return matchesSearch && matchesCategory && matchesTempo
   })
@@ -74,7 +94,7 @@ export function createEmptySong(overrides = {}) {
     title: '',
     titleNormalized: '',
     author: '',
-    category: 'Contemporánea',
+    category: defaultSongCategories[0],
     key: 'C Major',
     tempo: 72,
     lyrics: '',

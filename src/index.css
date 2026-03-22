@@ -24,6 +24,11 @@
   --tertiary-fixed-dim: #f0bd7f;
   --error: #ba1a1a;
   --shadow-color: rgba(0, 36, 70, 0.08);
+  --motion-duration-fast: 180ms;
+  --motion-duration-base: 280ms;
+  --motion-duration-slow: 420ms;
+  --motion-distance: 18px;
+  --motion-scale: 0.985;
 }
 
 * {
@@ -93,6 +98,95 @@ button {
   background:
     radial-gradient(circle at right top, rgba(203, 231, 245, 0.28), transparent 24%),
     radial-gradient(circle at left 40%, rgba(240, 189, 127, 0.08), transparent 30%);
+}
+
+.page-shell[data-motion-mode='normal'] .motion-page {
+  animation: page-enter var(--motion-duration-slow) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-shell[data-motion-mode='normal'] .motion-card {
+  animation: card-enter var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center top;
+}
+
+.page-shell[data-motion-mode='normal'] .motion-card:hover {
+  transform: translateY(-3px);
+}
+
+.page-shell[data-motion-mode='normal'] .motion-list-item {
+  animation: item-enter var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1);
+  animation-delay: var(--motion-delay, 0ms);
+  animation-fill-mode: both;
+}
+
+.page-shell[data-motion-mode='reduced'] .motion-page {
+  animation: page-enter-reduced 180ms ease-out;
+}
+
+.page-shell[data-motion-mode='reduced'] .motion-card,
+.page-shell[data-motion-mode='reduced'] .motion-list-item {
+  animation: fade-only 140ms ease-out;
+  animation-delay: 0ms;
+  animation-fill-mode: both;
+}
+
+.page-shell[data-motion-mode='off'] *,
+.page-shell[data-motion-mode='off'] *::before,
+.page-shell[data-motion-mode='off'] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-enter-reduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(var(--motion-scale));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 [data-sileo-viewport] {

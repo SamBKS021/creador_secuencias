@@ -308,7 +308,8 @@ function SequenceBuilderPage() {
                 key={song.id}
                 type="button"
                 onClick={() => addSong(song.id)}
-                className="flex w-full items-center justify-between rounded-2xl bg-[var(--surface-container-low)] px-4 py-4 text-left transition hover:bg-[var(--secondary-container)]"
+                className="motion-list-item flex w-full items-center justify-between rounded-2xl bg-[var(--surface-container-low)] px-4 py-4 text-left transition hover:bg-[var(--secondary-container)]"
+                style={{ '--motion-delay': `${Math.min(paginatedLibrary.indexOf(song) * 40, 200)}ms` }}
               >
                 <div>
                   <p className="font-headline text-lg font-bold text-[var(--primary)]">{song.title}</p>

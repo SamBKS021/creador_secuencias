@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { CloudUpload, LayoutDashboard, Library, ListMusic } from 'lucide-react'
+import { CloudUpload, LayoutDashboard, Library, ListMusic, Settings } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 const items = [
@@ -7,11 +7,12 @@ const items = [
   { to: '/biblioteca', label: 'Biblioteca', icon: Library },
   { to: '/subir', label: 'Carga', icon: CloudUpload },
   { to: '/secuencias', label: 'Secuencias', icon: ListMusic },
+  { to: '/ajustes', label: 'Ajustes', icon: Settings },
 ]
 
 function MobileNav() {
   return (
-    <nav className="glass-panel fixed inset-x-4 bottom-4 z-40 grid grid-cols-4 rounded-[24px] border border-white/60 p-2 shadow-[0_16px_30px_-18px_rgba(0,36,70,0.36)] lg:hidden">
+    <nav className="glass-panel fixed inset-x-4 bottom-4 z-40 grid grid-cols-5 rounded-[24px] border border-white/60 p-2 shadow-[0_16px_30px_-18px_rgba(0,36,70,0.36)] lg:hidden">
       {items.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}

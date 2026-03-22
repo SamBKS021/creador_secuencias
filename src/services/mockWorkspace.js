@@ -1,4 +1,5 @@
 import { buildStats } from '../utils/workspace.js'
+import { defaultSongCategories } from '../utils/workspace.js'
 
 const CONFIG_KEY = 'creador-secuencias-config'
 const DATA_KEY = 'creador-secuencias-data'
@@ -25,7 +26,7 @@ const demoSongs = [
     id: 'canto-0002',
     title: 'Living Waters',
     author: 'Kristene DiMarco',
-    category: 'Adoración',
+    category: 'Adoracion',
     key: 'D Major',
     tempo: 74,
     lyrics: 'Espíritu Santo, llena este lugar',
@@ -59,7 +60,7 @@ const demoSongs = [
     id: 'canto-0004',
     title: 'Resucitando',
     author: 'Elevation Worship',
-    category: 'Contemporánea',
+    category: 'Contemporanea',
     key: 'Db Major',
     tempo: 73,
     lyrics: 'Tu nombre venció la muerte',
@@ -93,7 +94,7 @@ const demoSongs = [
     id: 'canto-0006',
     title: 'Gratitud',
     author: 'Brandon Lake',
-    category: 'Adoración',
+    category: 'Adoracion',
     key: 'B Major',
     tempo: 78,
     lyrics: 'Vengo hoy con manos abiertas',
@@ -145,11 +146,22 @@ function readConfig() {
       locale: 'es-MX',
       preferences: {
         compactSidebar: false,
+        songCategories: defaultSongCategories,
+        motionMode: 'normal',
       },
     }
   }
 
-  return JSON.parse(raw)
+  const parsed = JSON.parse(raw)
+  return {
+    ...parsed,
+    preferences: {
+      compactSidebar: false,
+      songCategories: defaultSongCategories,
+      motionMode: 'normal',
+      ...(parsed.preferences || {}),
+    },
+  }
 }
 
 function writeConfig(config) {
@@ -191,6 +203,42 @@ function uniqueRoot(root, recentRoots) {
 
 export async function getWorkspaceConfig() {
   return readConfig()
+}
+
+export async function saveSongCategories(categories) {
+  const config = readConfig()
+  const nextCategories = categories
+    .map((category) => String(category || '').trim())
+    .filter(Boolean)
+    .filter((category, index, collection) => collection.indexOf(category) === index)
+
+  const preferences = {
+    ...config.preferences,
+    songCategories: nextCategories.length ? nextCategories : defaultSongCategories,
+  }
+
+  writeConfig({
+    ...config,
+    preferences,
+  })
+
+  return preferences
+}
+
+export async function saveMotionMode(motionMode) {
+  const config = readConfig()
+  const normalized = ['normal', 'reduced', 'off'].includes(motionMode) ? motionMode : 'normal'
+  const preferences = {
+    ...config.preferences,
+    motionMode: normalized,
+  }
+
+  writeConfig({
+    ...config,
+    preferences,
+  })
+
+  return preferences
 }
 
 export async function selectWorkspaceRoot() {

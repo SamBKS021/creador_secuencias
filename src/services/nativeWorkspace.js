@@ -4,6 +4,14 @@ export function getWorkspaceConfig() {
   return invoke('get_workspace_config')
 }
 
+export function saveSongCategories(categories) {
+  return invoke('save_song_categories', { categories })
+}
+
+export function saveMotionMode(motionMode) {
+  return invoke('save_motion_mode', { motionMode })
+}
+
 export function selectWorkspaceRoot() {
   return invoke('select_workspace_root')
 }

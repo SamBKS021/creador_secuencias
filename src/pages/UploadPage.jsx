@@ -9,7 +9,7 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 import DraftEditor from "../features/upload/DraftEditor.jsx";
 import ImportReviewModal from "../features/upload/ImportReviewModal.jsx";
 import UploadDropzone from "../features/upload/UploadDropzone.jsx";
-import { createEmptySong } from "../utils/workspace.js";
+import { createEmptySong, getSongCategories } from "../utils/workspace.js";
 
 const BLENDY_ID = "import-review";
 
@@ -22,12 +22,12 @@ function normalizeMultiline(value) {
     .trim();
 }
 
-function createReviewForm(candidate) {
+function createReviewForm(candidate, defaultCategory) {
   return createEmptySong({
     title: candidate.titleDetected || "",
     titleNormalized: candidate.titleNormalized || "",
     author: candidate.authorDetected || "",
-    category: "Contemporanea",
+    category: defaultCategory,
     key: candidate.keyDetected || "C",
     tempo: 72,
     lyrics: candidate.lyrics || "",
@@ -36,13 +36,13 @@ function createReviewForm(candidate) {
   });
 }
 
-function flattenImportBatch(result) {
+function flattenImportBatch(result, defaultCategory) {
   return (result.documents || []).flatMap((document) =>
     (document.candidates || []).map((candidate) => ({
       id: candidate.candidateId,
       candidate,
-      initialForm: createReviewForm(candidate),
-      form: createReviewForm(candidate)
+      initialForm: createReviewForm(candidate, defaultCategory),
+      form: createReviewForm(candidate, defaultCategory)
     }))
   );
 }
@@ -50,7 +50,14 @@ function flattenImportBatch(result) {
 function UploadPage() {
   const { state, actions } = useAppContext();
   const blendyRef = useRef(null);
-  const [form, setForm] = useState(createEmptySong());
+  const songCategories = useMemo(
+    () => getSongCategories(state.preferences),
+    [state.preferences]
+  );
+  const defaultCategory = songCategories[0] || "Contemporanea";
+  const [form, setForm] = useState(() =>
+    createEmptySong({ category: defaultCategory })
+  );
   const [reviewState, setReviewState] = useState({
     open: false,
     items: [],
@@ -169,7 +176,7 @@ function UploadPage() {
       const batch = await actions.importSongDocxBatch();
       sileo.dismiss(loadingToastId);
 
-      const reviewItems = flattenImportBatch(batch);
+      const reviewItems = flattenImportBatch(batch, defaultCategory);
       if (!batch.documents?.length) {
         sileo.info({
           title: "Importacion cancelada",
@@ -378,14 +385,15 @@ function UploadPage() {
             </p>
           </EditorialCard>
 
-          <DraftEditor
-            title="Nuevo canto"
-            subtitle="Completa titulo, autor, tonalidad, tempo y letra. El backend lo convertira al formato canonico JSON del workspace."
-            value={form}
-            onChange={setForm}
-            onSubmit={async () => {
+        <DraftEditor
+          title="Nuevo canto"
+          subtitle="Completa los datos del canto y su letra para agregarlo manualmente a tu biblioteca."
+          value={form}
+          categories={songCategories}
+          onChange={setForm}
+          onSubmit={async () => {
               await actions.saveSong(form);
-              setForm(createEmptySong());
+              setForm(createEmptySong({ category: defaultCategory }));
             }}
             submitLabel="Guardar canto"
           />
@@ -419,6 +427,7 @@ function UploadPage() {
         onUseExisting={handleUseExisting}
         onOverwriteExisting={handleOverwriteReviewItem}
         onSaveNew={handleSaveReviewItem}
+        categories={songCategories}
       />
     </>
   );

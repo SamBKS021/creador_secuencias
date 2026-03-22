@@ -4,6 +4,7 @@ import {
   createEmptySequence,
   createEmptySong,
   defaultLibraryFilters,
+  defaultSongCategories,
 } from '../../utils/workspace.js'
 
 export const initialState = {
@@ -14,6 +15,8 @@ export const initialState = {
   preferences: {
     locale: 'es-MX',
     compactSidebar: false,
+    songCategories: defaultSongCategories,
+    motionMode: 'normal',
   },
   songs: [],
   sequences: [],
@@ -65,6 +68,14 @@ export function appReducer(state, action) {
         ...state,
         workspaceRoot: action.payload.workspaceRoot,
         recentRoots: action.payload.recentRoots || state.recentRoots,
+      }
+    case 'preferences:set':
+      return {
+        ...state,
+        preferences: {
+          ...state.preferences,
+          ...action.payload,
+        },
       }
     case 'library:filters':
       return {
