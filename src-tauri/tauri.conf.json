@@ -28,6 +28,14 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/SamBKS021/creador_secuencias/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEE2MDc2RDM2MTU2OTk2MzcKUldRM2xta1ZObTBIcHBBdUtjTXFpWEJDdWlPZmNSL2FIUHpETW9XNzNxVDVjNHZIMVBGeWllUEMK"
+    }
+  },
   "bundle": {
     "active": true,
     "icon": [
