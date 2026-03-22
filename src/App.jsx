@@ -8,6 +8,7 @@ import CategorySettingsPage from './pages/CategorySettingsPage.jsx'
 import AnimationSettingsPage from './pages/AnimationSettingsPage.jsx'
 import DriveSyncSettingsPage from './pages/DriveSyncSettingsPage.jsx'
 import HelpPage from './pages/HelpPage.jsx'
+import UpdatesPage from './pages/UpdatesPage.jsx'
 import SequenceBuilderPage from './pages/SequenceBuilderPage.jsx'
 import SequencesPage from './pages/SequencesPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -30,6 +31,7 @@ function App() {
             <Route path="/ajustes/animaciones" element={<AnimationSettingsPage />} />
             <Route path="/ajustes/drive" element={<DriveSyncSettingsPage />} />
             <Route path="/ayuda" element={<HelpPage />} />
+            <Route path="/actualizaciones" element={<UpdatesPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

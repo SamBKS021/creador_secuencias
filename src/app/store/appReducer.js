@@ -39,6 +39,24 @@ export const initialState = {
     lastSyncResult: '',
     pendingConflicts: [],
   },
+  updateStatus: {
+    configured: false,
+    checking: false,
+    available: false,
+    currentVersion: '',
+    latestVersion: '',
+    title: '',
+    releaseNotes: [],
+    pubDate: '',
+    downloadUrl: '',
+    source: '',
+    dismissedVersion: '',
+    modalEligible: false,
+    promptVisible: false,
+    installing: false,
+    installProgress: null,
+    lastCheckedAt: '',
+  },
   songs: [],
   sequences: [],
   drafts: [],
@@ -87,6 +105,10 @@ export function appReducer(state, action) {
         workspaceRoot: action.payload.workspaceRoot || state.workspaceRoot,
         recentRoots: action.payload.recentRoots || state.recentRoots,
         preferences: action.payload.preferences || state.preferences,
+        updateStatus: {
+          ...state.updateStatus,
+          dismissedVersion: action.payload.dismissedUpdateVersion || state.updateStatus.dismissedVersion,
+        },
         songCategories: action.payload.songCategories || state.songCategories,
         songs: action.payload.songs || [],
         sequences: action.payload.sequences || [],
@@ -136,6 +158,22 @@ export function appReducer(state, action) {
         syncStatus: {
           ...state.syncStatus,
           ...action.payload,
+        },
+      }
+    case 'update:set':
+      return {
+        ...state,
+        updateStatus: {
+          ...state.updateStatus,
+          ...action.payload,
+        },
+      }
+    case 'update:progress':
+      return {
+        ...state,
+        updateStatus: {
+          ...state.updateStatus,
+          installProgress: action.payload,
         },
       }
     case 'library:filters':

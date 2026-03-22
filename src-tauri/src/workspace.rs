@@ -66,6 +66,7 @@ pub fn load_config(app: &AppHandle) -> AppResult<WorkspaceConfig> {
             recent_roots: Vec::new(),
             locale: "es-MX".into(),
             preferences: Preferences::default(),
+            dismissed_update_version: String::new(),
         });
     }
 

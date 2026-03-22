@@ -10,12 +10,14 @@ mod models;
 mod repository;
 mod sync;
 mod sync_manifest;
+mod update;
 mod workspace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.maximize();
@@ -35,6 +37,11 @@ pub fn run() {
             commands::get_sync_status,
             commands::sync_workspace_now,
             commands::resolve_sync_conflict,
+            commands::get_app_version,
+            commands::check_app_update,
+            commands::get_update_notice_manifest,
+            commands::install_app_update,
+            commands::dismiss_app_update,
             commands::exit_application,
             commands::minimize_main_window,
             commands::toggle_maximize_main_window,

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { sileo } from 'sileo'
 import { useAppContext } from '../app/store/AppContext.jsx'
+import Button from '../components/ui/Button.jsx'
 import MobileNav from '../components/layout/MobileNav.jsx'
 import SideNav from '../components/layout/SideNav.jsx'
 import TopBar from '../components/layout/TopBar.jsx'
@@ -27,18 +29,137 @@ function ShutdownSyncModal({ open }) {
   )
 }
 
+function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onInstallNow, onOpenDetails }) {
+  const [doNotShowAgain, setDoNotShowAgain] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setDoNotShowAgain(false)
+    }
+  }, [open])
+
+  if (!open || !updateStatus.available) {
+    return null
+  }
+
+  function handleLater() {
+    if (doNotShowAgain) {
+      onDismissForever()
+      return
+    }
+
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[245] flex items-center justify-center bg-[rgba(10,24,40,0.34)] px-4 backdrop-blur-md">
+      <div className="w-full max-w-2xl rounded-[28px] bg-white px-6 py-7 shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+        <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
+          Actualización disponible
+        </p>
+        <h3 className="mt-3 font-headline text-3xl font-extrabold text-[var(--primary)]">
+          {updateStatus.title || 'Hay una nueva versión lista para instalar'}
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-[var(--on-surface-variant)]">
+          Versión instalada: <strong>{updateStatus.currentVersion || 'actual'}</strong>
+          {' · '}
+          Nueva versión: <strong>{updateStatus.latestVersion}</strong>
+        </p>
+
+        {updateStatus.releaseNotes?.length ? (
+          <div className="mt-5 rounded-[22px] bg-[var(--surface-container-low)] px-4 py-4">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Novedades</p>
+            <div className="mt-3 space-y-2 text-sm leading-6 text-[var(--on-surface-variant)]">
+              {updateStatus.releaseNotes.slice(0, 4).map((note) => (
+                <p key={note}>• {note}</p>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <label className="mt-5 flex items-center gap-3 text-sm text-[var(--on-surface-variant)]">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--primary)]"
+            checked={doNotShowAgain}
+            onChange={(event) => setDoNotShowAgain(event.target.checked)}
+          />
+          No volver a mostrar para esta versión
+        </label>
+
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <Button variant="outline" onClick={onOpenDetails}>
+            Ver detalles
+          </Button>
+          <Button variant="ghost" onClick={handleLater}>
+            Después
+          </Button>
+          <Button onClick={onInstallNow}>Instalar ahora</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function UpdateInstallingModal({ open, progress }) {
+  if (!open) {
+    return null
+  }
+
+  const percent = Math.max(0, Math.min(100, Math.round(progress?.percent || 0)))
+
+  return (
+    <div className="fixed inset-0 z-[246] flex items-center justify-center bg-[rgba(10,24,40,0.34)] px-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
+          <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
+        </div>
+        <p className="mt-5 font-headline text-2xl font-extrabold text-[var(--primary)]">Instalando actualización</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
+          {progress?.detail || 'Estamos descargando e instalando la nueva versión de la app.'}
+        </p>
+        <div className="mt-5 overflow-hidden rounded-full bg-[var(--surface-container-low)]">
+          <div
+            className="h-2 rounded-full bg-[var(--primary)] transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--outline)]">{percent}%</p>
+      </div>
+    </div>
+  )
+}
+
 function AppLayout() {
   const { state, actions } = useAppContext()
   const location = useLocation()
+  const navigate = useNavigate()
   const [showShutdownSync, setShowShutdownSync] = useState(false)
   const actionsRef = useRef(actions)
   const stateRef = useRef(state)
   const programmaticCloseRef = useRef(false)
+  const notifiedUpdateVersionRef = useRef('')
 
   useEffect(() => {
     actionsRef.current = actions
     stateRef.current = state
   }, [actions, state])
+
+  useEffect(() => {
+    if (!state.updateStatus.available || !state.updateStatus.latestVersion) {
+      return
+    }
+
+    if (notifiedUpdateVersionRef.current === state.updateStatus.latestVersion) {
+      return
+    }
+
+    notifiedUpdateVersionRef.current = state.updateStatus.latestVersion
+    sileo.info({
+      title: 'Actualización disponible',
+      description: `${state.updateStatus.latestVersion} está lista para instalar.`,
+    })
+  }, [state.updateStatus.available, state.updateStatus.latestVersion])
 
   useEffect(() => {
     if (!state.startup.visible) {
@@ -141,6 +262,29 @@ function AppLayout() {
     }
   }, [])
 
+  async function handleInstallUpdate() {
+    try {
+      actions.setUpdatePromptVisible(false)
+      await actions.downloadAndInstallUpdate()
+    } catch (error) {
+      sileo.error({
+        title: 'No se pudo instalar la actualización',
+        description: error?.message || 'Inténtalo de nuevo más tarde.',
+      })
+    }
+  }
+
+  async function handleDismissUpdatePermanently() {
+    try {
+      await actions.dismissUpdate(state.updateStatus.latestVersion)
+    } catch (error) {
+      sileo.error({
+        title: 'No se pudo guardar la preferencia',
+        description: error?.message || 'Inténtalo de nuevo.',
+      })
+    }
+  }
+
   return (
     <>
       <div
@@ -166,6 +310,24 @@ function AppLayout() {
         </div>
         <MobileNav />
       </div>
+      <UpdatePendingModal
+        open={
+          !state.startup.visible &&
+          !showShutdownSync &&
+          state.updateStatus.modalEligible &&
+          state.updateStatus.promptVisible &&
+          !state.updateStatus.installing
+        }
+        updateStatus={state.updateStatus}
+        onClose={() => actions.setUpdatePromptVisible(false)}
+        onDismissForever={handleDismissUpdatePermanently}
+        onInstallNow={handleInstallUpdate}
+        onOpenDetails={() => {
+          actions.setUpdatePromptVisible(false)
+          navigate('/actualizaciones')
+        }}
+      />
+      <UpdateInstallingModal open={state.updateStatus.installing} progress={state.updateStatus.installProgress} />
       <ShutdownSyncModal open={showShutdownSync} />
     </>
   )

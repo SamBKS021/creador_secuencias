@@ -25,6 +25,7 @@ pub struct WorkspaceConfig {
     pub recent_roots: Vec<String>,
     pub locale: String,
     pub preferences: Preferences,
+    pub dismissed_update_version: String,
 }
 
 impl Default for WorkspaceConfig {
@@ -34,6 +35,7 @@ impl Default for WorkspaceConfig {
             recent_roots: Vec::new(),
             locale: "es-MX".into(),
             preferences: Preferences::default(),
+            dismissed_update_version: String::new(),
         }
     }
 }
@@ -398,4 +400,43 @@ pub struct SequenceExportStatus {
     pub exists: bool,
     pub file_path: String,
     pub file_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNoticeManifest {
+    pub version: String,
+    pub title: String,
+    pub notes: Vec<String>,
+    pub visible: bool,
+    pub severity: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct AppUpdateStatus {
+    pub configured: bool,
+    pub checking: bool,
+    pub available: bool,
+    pub current_version: String,
+    pub latest_version: String,
+    pub title: String,
+    pub release_notes: Vec<String>,
+    pub pub_date: String,
+    pub download_url: String,
+    pub source: String,
+    pub dismissed_version: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInstallProgress {
+    pub stage: String,
+    pub downloaded: u64,
+    pub total: u64,
+    pub percent: f32,
+    pub detail: String,
 }

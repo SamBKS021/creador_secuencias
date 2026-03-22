@@ -4,6 +4,7 @@ import { defaultSongCategories } from '../utils/workspace.js'
 const CONFIG_KEY = 'creador-secuencias-config'
 const DATA_KEY = 'creador-secuencias-data'
 const MANAGED_WORKSPACE_ROOT = 'AppData/Centro Cristiano Palmas/workspace'
+const UPDATE_KEY = 'creador-secuencias-update'
 
 const demoSongs = [
   {
@@ -145,6 +146,7 @@ function readConfig() {
       workspaceRoot: MANAGED_WORKSPACE_ROOT,
       recentRoots: [MANAGED_WORKSPACE_ROOT],
       locale: 'es-MX',
+      dismissedUpdateVersion: '',
       preferences: {
         compactSidebar: false,
         motionMode: 'normal',
@@ -160,6 +162,7 @@ function readConfig() {
       parsed.workspaceRoot || (parsed.recentRoots || []).length
         ? [parsed.workspaceRoot || MANAGED_WORKSPACE_ROOT, ...(parsed.recentRoots || []).filter((item) => item !== (parsed.workspaceRoot || MANAGED_WORKSPACE_ROOT))].slice(0, 5)
         : [MANAGED_WORKSPACE_ROOT],
+    dismissedUpdateVersion: parsed.dismissedUpdateVersion || '',
     preferences: {
       compactSidebar: false,
       motionMode: 'normal',
@@ -319,6 +322,70 @@ export async function getSyncStatus() {
     lastSyncResult: localStorage.getItem(`${DATA_KEY}-last-sync-result`) || '',
     pendingConflicts: JSON.parse(localStorage.getItem(`${DATA_KEY}-sync-conflicts`) || '[]'),
   }
+}
+
+function readMockUpdateState() {
+  const raw = localStorage.getItem(UPDATE_KEY)
+  if (!raw) {
+    return {
+      configured: false,
+      available: false,
+      currentVersion: '0.1.0',
+      latestVersion: '',
+      title: '',
+      releaseNotes: [],
+      pubDate: '',
+      downloadUrl: '',
+      source: '',
+    }
+  }
+
+  return JSON.parse(raw)
+}
+
+function writeMockUpdateState(next) {
+  localStorage.setItem(UPDATE_KEY, JSON.stringify(next))
+  return next
+}
+
+export async function getAppVersion() {
+  return '0.1.0'
+}
+
+export async function getUpdateNoticeManifest() {
+  return null
+}
+
+export async function checkAppUpdate() {
+  const config = readConfig()
+  const current = readMockUpdateState()
+  return {
+    ...current,
+    dismissedVersion: config.dismissedUpdateVersion || '',
+  }
+}
+
+export async function dismissAppUpdate(version) {
+  const config = readConfig()
+  writeConfig({
+    ...config,
+    dismissedUpdateVersion: version,
+  })
+  return { ok: true }
+}
+
+export async function installAppUpdate() {
+  const current = readMockUpdateState()
+  if (!current.available) {
+    throw new Error('No hay una actualización disponible para instalar.')
+  }
+
+  writeMockUpdateState({
+    ...current,
+    available: false,
+  })
+
+  return { ok: true }
 }
 
 export async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {

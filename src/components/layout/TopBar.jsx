@@ -1,7 +1,8 @@
-import { Copy, HelpCircle, Minus, X } from "lucide-react";
+import { Bell, Copy, HelpCircle, Minus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useAppContext } from "../../app/store/AppContext.jsx";
 import IconButton from "../ui/IconButton.jsx";
 import { isTauriRuntime } from "../../utils/platform.js";
 import service from "../../services/workspaceService.js";
@@ -15,6 +16,7 @@ const topLinks = [
 
 function TopBar() {
   const navigate = useNavigate();
+  const { state } = useAppContext();
   const isDesktop = useMemo(() => isTauriRuntime(), []);
   const appWindow = useMemo(() => (isDesktop ? getCurrentWindow() : null), [isDesktop]);
   const [isMaximized, setIsMaximized] = useState(true);
@@ -117,6 +119,17 @@ function TopBar() {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
+          <div className="relative">
+            <IconButton
+              icon={Bell}
+              aria-label="Actualizaciones"
+              onClick={() => navigate("/actualizaciones")}
+              className="text-[var(--primary)]"
+            />
+            {state.updateStatus.available ? (
+              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[var(--error)] shadow-[0_0_0_4px_rgba(255,255,255,0.92)]" />
+            ) : null}
+          </div>
           <IconButton
             icon={HelpCircle}
             aria-label="Ayuda"

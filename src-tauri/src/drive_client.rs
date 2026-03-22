@@ -4,11 +4,12 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::errors::{AppError, AppResult};
-use crate::models::{ManifestRecord, OAuthLocalConfig};
+use crate::models::{ManifestRecord, OAuthLocalConfig, UpdateNoticeManifest};
 use crate::sync_manifest::{remote_file_name_for_logical_key, REMOTE_MANIFEST_NAME};
 
 const DRIVE_FILES_ENDPOINT: &str = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD_ENDPOINT: &str = "https://www.googleapis.com/upload/drive/v3/files";
+pub const UPDATE_NOTICE_MANIFEST_NAME: &str = "update-manifest.json";
 
 #[derive(Debug, Deserialize)]
 struct FileListResponse {
@@ -41,6 +42,16 @@ pub fn load_remote_manifest(access_token: &str) -> AppResult<(String, ManifestRe
     let bytes = download_file_bytes(access_token, &file.id)?;
     let manifest = serde_json::from_slice::<ManifestRecord>(&bytes)?;
     Ok((file.id, manifest))
+}
+
+pub fn load_update_notice_manifest(access_token: &str) -> AppResult<Option<UpdateNoticeManifest>> {
+    let Some(file) = find_file_by_name(access_token, UPDATE_NOTICE_MANIFEST_NAME)? else {
+        return Ok(None);
+    };
+
+    let bytes = download_file_bytes(access_token, &file.id)?;
+    let manifest = serde_json::from_slice::<UpdateNoticeManifest>(&bytes)?;
+    Ok(Some(manifest))
 }
 
 pub fn save_remote_manifest(access_token: &str, file_id: Option<&str>, manifest: &ManifestRecord) -> AppResult<String> {

@@ -40,6 +40,26 @@ export function getSyncStatus() {
   return invoke('get_sync_status')
 }
 
+export function getAppVersion() {
+  return invoke('get_app_version')
+}
+
+export function checkAppUpdate() {
+  return invoke('check_app_update')
+}
+
+export function getUpdateNoticeManifest() {
+  return invoke('get_update_notice_manifest')
+}
+
+export function installAppUpdate() {
+  return invoke('install_app_update')
+}
+
+export function dismissAppUpdate(version) {
+  return invoke('dismiss_app_update', { version })
+}
+
 export function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
   return invoke('sync_workspace_now', { reason, mode })
 }

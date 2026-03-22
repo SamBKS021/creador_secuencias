@@ -85,7 +85,7 @@ const sections = [
     icon: Search,
     intro: 'La barra superior y los menus laterales te permiten moverte y ubicar rapidamente lo importante.',
     points: [
-      'La barra superior muestra la carpeta activa y accesos directos a las vistas principales.',
+      'La barra superior muestra accesos directos a las vistas principales y a las actualizaciones disponibles.',
       'El signo de interrogacion abre esta guia de uso.',
       'Los menus laterales muestran las secciones principales y las opciones de ajustes.',
     ],

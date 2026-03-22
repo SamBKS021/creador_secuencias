@@ -12,9 +12,10 @@ use crate::errors::AppResult;
 use crate::export::{export_sequence_docx as build_docx_export, export_sequence_docx_path};
 use crate::importer::{import_docx_batch, normalize_title};
 use crate::models::{
-    Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult, Sequence,
-    Preferences, ResolveConflictPayload, SequenceExportStatus, SequenceMutationResult, Song, SongMutationResult,
-    SongPayload, SyncResult, SyncStatus, WorkspaceConfig, WorkspaceSelection,
+    AppUpdateStatus, Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult,
+    Preferences, ResolveConflictPayload, Sequence, SequenceExportStatus, SequenceMutationResult, Song,
+    SongMutationResult, SongPayload, SyncResult, SyncStatus, UpdateNoticeManifest, WorkspaceConfig,
+    WorkspaceSelection,
 };
 use crate::repository::{
     append_drafts, bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record,
@@ -22,6 +23,11 @@ use crate::repository::{
     upsert_sequence, upsert_song,
 };
 use crate::sync::{get_sync_status as load_sync_status, resolve_sync_conflict as run_conflict_resolution, sync_workspace_now as run_sync};
+use crate::update::{
+    check_app_update as load_app_update, dismiss_app_update as dismiss_pending_app_update,
+    get_app_version as load_app_version, get_update_notice_manifest as load_update_notice_manifest,
+    install_app_update as run_app_update_install,
+};
 use crate::workspace::{ensure_managed_workspace_config, ensure_workspace, read_json, save_config};
 
 fn file_path_to_pathbuf(file_path: FilePath) -> Option<PathBuf> {
@@ -341,6 +347,31 @@ pub fn sync_workspace_now(app: AppHandle, reason: String, mode: Option<String>) 
 #[tauri::command]
 pub fn resolve_sync_conflict(app: AppHandle, payload: ResolveConflictPayload) -> Result<SyncResult, String> {
     run_conflict_resolution(&app, &payload).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn get_app_version(app: AppHandle) -> Result<String, String> {
+    Ok(load_app_version(&app))
+}
+
+#[tauri::command]
+pub async fn check_app_update(app: AppHandle) -> Result<AppUpdateStatus, String> {
+    load_app_update(&app).await.map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn get_update_notice_manifest(app: AppHandle) -> Result<Option<UpdateNoticeManifest>, String> {
+    load_update_notice_manifest(&app).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub async fn install_app_update(app: AppHandle) -> Result<OperationResult, String> {
+    run_app_update_install(app).await.map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn dismiss_app_update(app: AppHandle, version: String) -> Result<OperationResult, String> {
+    dismiss_pending_app_update(&app, &version).map_err(|error| error.to_string())
 }
 
 #[tauri::command]

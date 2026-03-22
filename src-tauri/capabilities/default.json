@@ -3,5 +3,5 @@
   "identifier": "main-capability",
   "description": "Permisos principales para la ventana desktop",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "updater:default"]
 }

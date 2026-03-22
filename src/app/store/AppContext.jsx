@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
+import { listen } from '@tauri-apps/api/event'
 import StartupOverlay from '../../components/system/StartupOverlay.jsx'
 import service from '../../services/workspaceService.js'
 import { isTauriRuntime } from '../../utils/platform.js'
@@ -16,6 +17,7 @@ function buildEmptyBootstrap(config, songCategories) {
     stats: { totalSongs: 0, totalSequences: 0, recentUploads: [], upcomingSequences: [] },
     recentRoots: config.recentRoots,
     preferences: config.preferences,
+    dismissedUpdateVersion: config.dismissedUpdateVersion,
     songCategories,
     workspaceRoot: '',
   }
@@ -27,6 +29,7 @@ export function AppProvider({ children }) {
     platformMode: isTauriRuntime() ? 'tauri' : 'web',
   })
   const initializeOnceRef = useRef(false)
+  const updateCheckOnceRef = useRef(false)
 
   useEffect(() => {
     if (initializeOnceRef.current) {
@@ -76,10 +79,10 @@ export function AppProvider({ children }) {
           await wait(220)
           dispatch({
             type: 'bootstrap:success',
-            payload: buildEmptyBootstrap(config, state.songCategories),
-          })
-          dispatch({ type: 'startup:done' })
-          return
+          payload: buildEmptyBootstrap(config, state.songCategories),
+        })
+        dispatch({ type: 'startup:done' })
+        return
         }
 
         updateStartup(56, 'Cargando cantos y secuencias...')
@@ -92,6 +95,7 @@ export function AppProvider({ children }) {
             workspaceRoot: config.workspaceRoot,
             recentRoots: config.recentRoots,
             preferences: config.preferences,
+            dismissedUpdateVersion: config.dismissedUpdateVersion,
           },
         })
 
@@ -118,6 +122,7 @@ export function AppProvider({ children }) {
                 workspaceRoot: config.workspaceRoot,
                 recentRoots: config.recentRoots,
                 preferences: config.preferences,
+                dismissedUpdateVersion: config.dismissedUpdateVersion,
               },
             })
 
@@ -158,6 +163,65 @@ export function AppProvider({ children }) {
 
     initialize()
   }, [])
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return undefined
+    }
+
+    let unlisten
+
+    ;(async () => {
+      unlisten = await listen('app-update-progress', (event) => {
+        dispatch({
+          type: 'update:progress',
+          payload: event.payload || null,
+        })
+      })
+    })()
+
+    return () => {
+      if (unlisten) {
+        unlisten()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (state.startup.visible || updateCheckOnceRef.current) {
+      return
+    }
+
+    updateCheckOnceRef.current = true
+
+    ;(async () => {
+      try {
+        dispatch({ type: 'update:set', payload: { checking: true } })
+        const result = await service.checkAppUpdate?.()
+        if (!result) {
+          dispatch({ type: 'update:set', payload: { checking: false } })
+          return
+        }
+
+        dispatch({
+          type: 'update:set',
+          payload: {
+            ...result,
+            checking: false,
+            modalEligible: true,
+            promptVisible:
+              Boolean(result.available) &&
+              state.startup.visible === false &&
+              (!result.dismissedVersion || result.dismissedVersion !== result.latestVersion),
+            lastCheckedAt: new Date().toISOString(),
+            installProgress: null,
+          },
+        })
+      } catch (_) {
+        dispatch({ type: 'update:set', payload: { checking: false, modalEligible: true } })
+      }
+    })()
+  }, [state.startup.visible])
 
   async function chooseWorkspace() {
     const result = await service.selectWorkspaceRoot()
@@ -284,6 +348,69 @@ export function AppProvider({ children }) {
     return { authStatus, syncStatus }
   }
 
+  async function checkForAppUpdate() {
+    dispatch({ type: 'update:set', payload: { checking: true } })
+    try {
+      const result = await service.checkAppUpdate?.()
+      dispatch({
+        type: 'update:set',
+        payload: {
+          ...result,
+          checking: false,
+          modalEligible: true,
+          promptVisible:
+            Boolean(result?.available) &&
+            (!result?.dismissedVersion || result.dismissedVersion !== result.latestVersion),
+          lastCheckedAt: new Date().toISOString(),
+        },
+      })
+      return result
+    } catch (error) {
+      dispatch({ type: 'update:set', payload: { checking: false } })
+      throw error
+    }
+  }
+
+  async function dismissUpdate(version) {
+    await service.dismissAppUpdate?.(version)
+    dispatch({
+      type: 'update:set',
+      payload: {
+        dismissedVersion: version,
+        promptVisible: false,
+      },
+    })
+  }
+
+  async function downloadAndInstallUpdate() {
+    dispatch({
+      type: 'update:set',
+      payload: {
+        installing: true,
+        installProgress: {
+          stage: 'starting',
+          percent: 0,
+          detail: 'Preparando actualización...',
+        },
+      },
+    })
+    try {
+      const result = await service.installAppUpdate?.()
+      dispatch({
+        type: 'update:set',
+        payload: {
+          installing: false,
+          available: false,
+          promptVisible: false,
+        },
+      })
+      return result
+    } catch (error) {
+      dispatch({ type: 'update:set', payload: { installing: false } })
+      throw error
+    }
+  }
+
   async function connectGoogleDrive() {
     const status = await service.connectGoogleDrive()
     dispatch({ type: 'driveAuth:set', payload: status })
@@ -396,6 +523,9 @@ export function AppProvider({ children }) {
       saveSongCategories,
       saveMotionMode,
       refreshSyncStatus,
+      checkForAppUpdate,
+      dismissUpdate,
+      downloadAndInstallUpdate,
       connectGoogleDrive,
       disconnectGoogleDrive,
       syncWorkspaceNow,
@@ -428,6 +558,9 @@ export function AppProvider({ children }) {
       },
       clearError() {
         dispatch({ type: 'error:set', payload: '' })
+      },
+      setUpdatePromptVisible(value) {
+        dispatch({ type: 'update:set', payload: { promptVisible: value } })
       },
     },
   }
