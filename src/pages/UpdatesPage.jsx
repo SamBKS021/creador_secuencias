@@ -28,7 +28,7 @@ function UpdatesPage() {
     }
 
     if (!state.updateStatus.configured) {
-      return 'El updater aún no está configurado en este build.'
+      return 'Este build no trae el updater configurado o el endpoint aún no está disponible.'
     }
 
     if (!state.updateStatus.available) {

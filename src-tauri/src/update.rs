@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use reqwest::Url;
+use reqwest::{StatusCode, Url};
 use semver::Version;
 use serde::Deserialize;
 use tauri::AppHandle;
@@ -33,7 +33,11 @@ fn split_release_notes(value: &str) -> Vec<String> {
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
-        .map(|line| line.trim_start_matches("- ").trim_start_matches("* ").to_string())
+        .map(|line| {
+            line.trim_start_matches("- ")
+                .trim_start_matches("* ")
+                .to_string()
+        })
         .collect()
 }
 
@@ -77,6 +81,22 @@ fn load_drive_notice(app: &AppHandle) -> Option<UpdateNoticeManifest> {
     load_update_notice_manifest(&access_token).ok().flatten()
 }
 
+fn friendly_update_error(error: reqwest::Error) -> AppError {
+    if let Some(status) = error.status() {
+        return match status {
+            StatusCode::NOT_FOUND => AppError::from(
+                "No se encontró latest.json en GitHub Releases. Revisa que el release exista, que el repo sea público y que APP_UPDATE_ENDPOINT apunte al archivo correcto.",
+            ),
+            StatusCode::FORBIDDEN | StatusCode::UNAUTHORIZED => AppError::from(
+                "GitHub rechazó la consulta del updater. Si el repo es privado, el cliente no podrá leer latest.json sin autenticación.",
+            ),
+            _ => AppError::from(error.to_string().as_str()),
+        };
+    }
+
+    AppError::from(error.to_string().as_str())
+}
+
 pub fn get_app_version(app: &AppHandle) -> String {
     app.package_info().version.to_string()
 }
@@ -106,21 +126,23 @@ pub async fn check_app_update(app: &AppHandle) -> AppResult<AppUpdateStatus> {
     };
 
     let _ = public_key;
-    let endpoint = Url::parse(&endpoint).map_err(|error| AppError::from(error.to_string().as_str()))?;
+    let endpoint =
+        Url::parse(&endpoint).map_err(|error| AppError::from(error.to_string().as_str()))?;
 
     let remote = reqwest::Client::new()
         .get(endpoint)
         .send()
         .await
-        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .map_err(friendly_update_error)?
         .error_for_status()
-        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .map_err(friendly_update_error)?
         .json::<RemoteReleaseManifest>()
         .await
-        .map_err(|error| AppError::from(error.to_string().as_str()))?;
+        .map_err(friendly_update_error)?;
 
     let current = Version::parse(&current_version).unwrap_or_else(|_| Version::new(0, 0, 0));
-    let latest = Version::parse(&remote.version).map_err(|error| AppError::from(error.to_string().as_str()))?;
+    let latest =
+        Version::parse(&remote.version).map_err(|error| AppError::from(error.to_string().as_str()))?;
     let target = current_update_target();
 
     let Some(platform) = remote.platforms.get(&target) else {

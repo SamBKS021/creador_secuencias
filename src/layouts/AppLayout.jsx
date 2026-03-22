@@ -20,9 +20,9 @@ function ShutdownSyncModal({ open }) {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
         </div>
-        <p className="mt-5 font-headline text-2xl font-extrabold text-[var(--primary)]">Cerrando aplicacion</p>
+        <p className="mt-5 font-headline text-2xl font-extrabold text-[var(--primary)]">Cerrando aplicación</p>
         <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
-          Estamos sincronizando con Drive antes de salir para dejar este equipo al dia.
+          Estamos sincronizando con Drive antes de salir para dejar este equipo al día.
         </p>
       </div>
     </div>
