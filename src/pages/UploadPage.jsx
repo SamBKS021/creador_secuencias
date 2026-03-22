@@ -51,8 +51,8 @@ function UploadPage() {
   const { state, actions } = useAppContext();
   const blendyRef = useRef(null);
   const songCategories = useMemo(
-    () => getSongCategories(state.preferences),
-    [state.preferences]
+    () => getSongCategories(state.songCategories),
+    [state.songCategories]
   );
   const defaultCategory = songCategories[0] || "Contemporanea";
   const [form, setForm] = useState(() =>

@@ -3,6 +3,7 @@ import { defaultSongCategories } from '../utils/workspace.js'
 
 const CONFIG_KEY = 'creador-secuencias-config'
 const DATA_KEY = 'creador-secuencias-data'
+const MANAGED_WORKSPACE_ROOT = 'AppData/Centro Cristiano Palmas/workspace'
 
 const demoSongs = [
   {
@@ -141,12 +142,11 @@ function readConfig() {
   const raw = localStorage.getItem(CONFIG_KEY)
   if (!raw) {
     return {
-      workspaceRoot: '',
-      recentRoots: [],
+      workspaceRoot: MANAGED_WORKSPACE_ROOT,
+      recentRoots: [MANAGED_WORKSPACE_ROOT],
       locale: 'es-MX',
       preferences: {
         compactSidebar: false,
-        songCategories: defaultSongCategories,
         motionMode: 'normal',
       },
     }
@@ -155,9 +155,13 @@ function readConfig() {
   const parsed = JSON.parse(raw)
   return {
     ...parsed,
+    workspaceRoot: parsed.workspaceRoot || MANAGED_WORKSPACE_ROOT,
+    recentRoots:
+      parsed.workspaceRoot || (parsed.recentRoots || []).length
+        ? [parsed.workspaceRoot || MANAGED_WORKSPACE_ROOT, ...(parsed.recentRoots || []).filter((item) => item !== (parsed.workspaceRoot || MANAGED_WORKSPACE_ROOT))].slice(0, 5)
+        : [MANAGED_WORKSPACE_ROOT],
     preferences: {
       compactSidebar: false,
-      songCategories: defaultSongCategories,
       motionMode: 'normal',
       ...(parsed.preferences || {}),
     },
@@ -173,6 +177,7 @@ function defaultData() {
   return {
     songs: demoSongs,
     sequences: [demoSequence],
+    songCategories: defaultSongCategories,
     drafts: [],
     appState: {
       nextSongId: 7,
@@ -205,24 +210,20 @@ export async function getWorkspaceConfig() {
   return readConfig()
 }
 
+export async function getSongCategories() {
+  return readData().songCategories || defaultSongCategories
+}
+
 export async function saveSongCategories(categories) {
-  const config = readConfig()
+  const data = readData()
   const nextCategories = categories
     .map((category) => String(category || '').trim())
     .filter(Boolean)
     .filter((category, index, collection) => collection.indexOf(category) === index)
 
-  const preferences = {
-    ...config.preferences,
-    songCategories: nextCategories.length ? nextCategories : defaultSongCategories,
-  }
-
-  writeConfig({
-    ...config,
-    preferences,
-  })
-
-  return preferences
+  data.songCategories = nextCategories.length ? nextCategories : defaultSongCategories
+  writeData(data)
+  return data.songCategories
 }
 
 export async function saveMotionMode(motionMode) {
@@ -242,7 +243,7 @@ export async function saveMotionMode(motionMode) {
 }
 
 export async function selectWorkspaceRoot() {
-  const workspaceRoot = 'Google Drive/Ministerio Musical'
+  const workspaceRoot = MANAGED_WORKSPACE_ROOT
   const config = readConfig()
 
   writeConfig({
@@ -267,10 +268,104 @@ export async function bootstrapApp(workspaceRoot) {
   return {
     songs: data.songs,
     sequences: data.sequences,
+    songCategories: data.songCategories || defaultSongCategories,
     drafts: data.drafts,
     stats: buildStats(data.songs, data.sequences),
     workspaceRoot: root,
   }
+}
+
+export async function getDriveAuthStatus() {
+  const raw = JSON.parse(localStorage.getItem(`${DATA_KEY}-drive-auth`) || 'null')
+  return raw || {
+    configured: true,
+    connected: false,
+    connectedAccountEmail: '',
+  }
+}
+
+export async function connectGoogleDrive() {
+  const next = {
+    configured: true,
+    connected: true,
+    connectedAccountEmail: 'demo@ejemplo.com',
+  }
+  localStorage.setItem(`${DATA_KEY}-drive-auth`, JSON.stringify(next))
+  return next
+}
+
+export async function disconnectGoogleDrive() {
+  const next = {
+    configured: true,
+    connected: false,
+    connectedAccountEmail: '',
+  }
+  localStorage.setItem(`${DATA_KEY}-drive-auth`, JSON.stringify(next))
+  return next
+}
+
+export async function getSyncStatus() {
+  const auth = await getDriveAuthStatus()
+  const lastSyncAt = localStorage.getItem(`${DATA_KEY}-last-sync-at`) || ''
+  const connectedAccountEmail = auth.connectedAccountEmail || ''
+  return {
+    configured: auth.configured,
+    connected: auth.connected,
+    connectedAccountEmail,
+    lastSyncedAccountEmail: localStorage.getItem(`${DATA_KEY}-last-sync-account`) || '',
+    needsInitialSyncChoice: Boolean(auth.connected && connectedAccountEmail && !lastSyncAt),
+    syncing: false,
+    lastSyncAt,
+    lastSyncResult: localStorage.getItem(`${DATA_KEY}-last-sync-result`) || '',
+    pendingConflicts: JSON.parse(localStorage.getItem(`${DATA_KEY}-sync-conflicts`) || '[]'),
+  }
+}
+
+export async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
+  const auth = await getDriveAuthStatus()
+  const lastSyncAt = localStorage.getItem(`${DATA_KEY}-last-sync-at`) || ''
+  if (auth.connected && auth.connectedAccountEmail && !lastSyncAt && mode === 'merge') {
+    throw new Error(
+      'Esta cuenta aun no tiene direccion inicial de sincronizacion. Elige si quieres subir lo local o bajar lo que ya existe en Drive.',
+    )
+  }
+
+  const now = nowIso()
+  localStorage.setItem(`${DATA_KEY}-last-sync-at`, now)
+  localStorage.setItem(
+    `${DATA_KEY}-last-sync-result`,
+    mode === 'push' ? 'ok (local -> drive)' : mode === 'pull' ? 'ok (drive -> local)' : 'ok',
+  )
+  localStorage.setItem(`${DATA_KEY}-last-sync-account`, auth.connectedAccountEmail || '')
+  localStorage.setItem(`${DATA_KEY}-sync-conflicts`, '[]')
+  return {
+    appliedDownloads: 0,
+    appliedUploads: 0,
+    detectedConflicts: 0,
+    lastSyncAt: now,
+    lastSyncResult: 'ok',
+    pendingConflicts: [],
+  }
+}
+
+export async function resolveSyncConflict() {
+  return syncWorkspaceNow()
+}
+
+export async function exitApplication() {
+  return { ok: true }
+}
+
+export async function minimizeMainWindow() {
+  return { ok: true }
+}
+
+export async function toggleMaximizeMainWindow() {
+  return { ok: true }
+}
+
+export async function closeMainWindow() {
+  return { ok: true }
 }
 
 export async function openSongFiles() {

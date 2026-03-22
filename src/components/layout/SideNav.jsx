@@ -18,44 +18,45 @@ const navItems = [
 
 function SideNav() {
   return (
-    <aside className="hidden w-[280px] shrink-0 border-r border-white/40 bg-[var(--surface-container-low)]/85 px-5 pb-8 pt-24 lg:flex lg:flex-col">
-      <div className="space-y-8">
-        <div className="space-y-1 px-2">
-          <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[var(--primary)]">
-            Centro Musical
+    <aside className="hidden h-full w-[280px] shrink-0 overflow-hidden border-r border-white/40 bg-[var(--surface-container-low)]/85 px-5 pb-8 pt-8 lg:flex lg:flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="space-y-8">
+          <div className="space-y-1 px-2">
+            <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[var(--primary)]">
+              Centro Musical
           </h2>
           <p className="font-headline text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Gestor de Cantos
           </p>
         </div>
 
-        <nav className="space-y-1">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                [
-                  "group relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 font-headline text-sm font-semibold transition-all duration-300 ease-out",
-                  "before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-[var(--primary)] before:transition-all before:duration-300 before:ease-out",
-                  isActive
-                    ? "translate-x-1 bg-white text-[var(--primary)] shadow-[0_14px_30px_-24px_rgba(0,36,70,0.45)] before:opacity-100 before:translate-x-0"
-                    : "text-slate-500 before:-translate-x-2 before:opacity-0 hover:translate-x-1 hover:bg-white/70 hover:text-[var(--primary)]"
-                ].join(" ")
-              }
-            >
-              <span className="relative z-10 transition-transform duration-300 ease-out group-hover:scale-105">
-                {createElement(Icon, { size: 18 })}
-              </span>
-              <span className="relative z-10 transition-transform duration-300 ease-out group-hover:translate-x-0.5">
-                {label}
-              </span>
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+          <nav className="app-scroll min-h-0 space-y-1 overflow-y-auto pr-1">
+            {navItems.map(({ to, label, icon: Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  [
+                    "group relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 font-headline text-sm font-semibold transition-all duration-300 ease-out",
+                    "before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-[var(--primary)] before:transition-all before:duration-300 before:ease-out",
+                    isActive
+                      ? "translate-x-1 bg-white text-[var(--primary)] shadow-[0_14px_30px_-24px_rgba(0,36,70,0.45)] before:opacity-100 before:translate-x-0"
+                      : "text-slate-500 before:-translate-x-2 before:opacity-0 hover:translate-x-1 hover:bg-white/70 hover:text-[var(--primary)]"
+                  ].join(" ")
+                }
+              >
+                <span className="relative z-10 transition-transform duration-300 ease-out group-hover:scale-105">
+                  {createElement(Icon, { size: 18 })}
+                </span>
+                <span className="relative z-10 transition-transform duration-300 ease-out group-hover:translate-x-0.5">
+                  {label}
+                </span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
-      <div className="mt-auto space-y-2 pt-6">
+        <div className="mt-auto space-y-2 pt-6">
         <NavLink
           to="/ajustes"
           className={({ isActive }) =>
@@ -70,10 +71,21 @@ function SideNav() {
           <Settings size={18} />
           Ajustes
         </NavLink>
-        <button className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-500 transition hover:bg-white/70">
+        <NavLink
+          to="/ayuda"
+          className={({ isActive }) =>
+            [
+              "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition",
+              isActive
+                ? "bg-white text-[var(--primary)] shadow-[0_14px_30px_-24px_rgba(0,36,70,0.45)]"
+                : "text-slate-500 hover:bg-white/70",
+            ].join(" ")
+          }
+        >
           <FolderCog size={18} />
           Soporte
-        </button>
+        </NavLink>
+        </div>
       </div>
     </aside>
   );

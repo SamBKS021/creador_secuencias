@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Preferences {
     pub compact_sidebar: bool,
-    pub song_categories: Vec<String>,
     pub motion_mode: String,
 }
 
@@ -13,12 +12,6 @@ impl Default for Preferences {
     fn default() -> Self {
         Self {
             compact_sidebar: false,
-            song_categories: vec![
-                "Contemporanea".into(),
-                "Adoracion".into(),
-                "Himno".into(),
-                "Destacada".into(),
-            ],
             motion_mode: "normal".into(),
         }
     }
@@ -191,6 +184,7 @@ pub struct BootstrapPayload {
     pub workspace_root: String,
     pub songs: Vec<Song>,
     pub sequences: Vec<Sequence>,
+    pub song_categories: Vec<String>,
     pub drafts: Vec<Draft>,
     pub stats: Stats,
 }
@@ -222,6 +216,106 @@ impl Default for AppState {
 #[serde(rename_all = "camelCase")]
 pub struct OperationResult {
     pub ok: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct OAuthLocalConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub connected_account_email: String,
+    pub refresh_token_cache: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct DriveAuthStatus {
+    pub configured: bool,
+    pub connected: bool,
+    pub connected_account_email: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestEntry {
+    pub logical_key: String,
+    pub hash: String,
+    pub updated_at: String,
+    pub deleted_at: String,
+    pub file_id: String,
+    pub entity_type: String,
+    pub entity_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestRecord {
+    pub entries: Vec<ManifestEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncConflict {
+    pub logical_key: String,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub title: String,
+    pub local_hash: String,
+    pub remote_hash: String,
+    pub local_deleted: bool,
+    pub remote_deleted: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncStateRecord {
+    pub device_id: String,
+    pub last_sync_at: String,
+    pub last_sync_result: String,
+    pub auth_account_email: String,
+    pub remote_manifest_file_id: String,
+    pub baseline_entries: Vec<ManifestEntry>,
+    pub pending_conflicts: Vec<SyncConflict>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncStatus {
+    pub configured: bool,
+    pub connected: bool,
+    pub connected_account_email: String,
+    pub last_synced_account_email: String,
+    pub needs_initial_sync_choice: bool,
+    pub syncing: bool,
+    pub last_sync_at: String,
+    pub last_sync_result: String,
+    pub pending_conflicts: Vec<SyncConflict>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncResult {
+    pub applied_downloads: usize,
+    pub applied_uploads: usize,
+    pub detected_conflicts: usize,
+    pub last_sync_at: String,
+    pub last_sync_result: String,
+    pub pending_conflicts: Vec<SyncConflict>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolveConflictPayload {
+    pub logical_key: String,
+    pub resolution: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
+import StartupOverlay from '../../components/system/StartupOverlay.jsx'
 import service from '../../services/workspaceService.js'
 import { isTauriRuntime } from '../../utils/platform.js'
 import { filterSongs } from '../../utils/workspace.js'
@@ -7,37 +8,83 @@ import { appReducer, initialState, selectActiveDraft, selectActiveSequence, sele
 
 const AppContext = createContext(null)
 
+function buildEmptyBootstrap(config, songCategories) {
+  return {
+    songs: [],
+    sequences: [],
+    drafts: [],
+    stats: { totalSongs: 0, totalSequences: 0, recentUploads: [], upcomingSequences: [] },
+    recentRoots: config.recentRoots,
+    preferences: config.preferences,
+    songCategories,
+    workspaceRoot: '',
+  }
+}
+
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, {
     ...initialState,
     platformMode: isTauriRuntime() ? 'tauri' : 'web',
   })
+  const initializeOnceRef = useRef(false)
 
   useEffect(() => {
+    if (initializeOnceRef.current) {
+      return
+    }
+    initializeOnceRef.current = true
+
+    function updateStartup(progress, detail) {
+      dispatch({
+        type: 'startup:set',
+        payload: {
+          progress,
+          detail,
+        },
+      })
+    }
+
+    async function wait(ms) {
+      await new Promise((resolve) => setTimeout(resolve, ms))
+    }
+
     async function initialize() {
       dispatch({ type: 'bootstrap:start' })
+      updateStartup(12, 'Preparando entorno local...')
 
       try {
         const config = await service.getWorkspaceConfig()
         dispatch({ type: 'workspace:selected', payload: config })
 
+        updateStartup(24, 'Leyendo configuracion de este equipo...')
+        const [authStatus, syncStatus] = await Promise.all([
+          service.getDriveAuthStatus?.() || Promise.resolve(null),
+          service.getSyncStatus?.() || Promise.resolve(null),
+        ])
+
+        if (authStatus) {
+          dispatch({ type: 'driveAuth:set', payload: authStatus })
+        }
+        if (syncStatus) {
+          dispatch({ type: 'sync:set', payload: syncStatus })
+        }
+
+        updateStartup(38, 'Comprobando estado de Google Drive...')
+
         if (!config.workspaceRoot) {
+          updateStartup(72, 'Listo para comenzar.')
+          await wait(220)
           dispatch({
             type: 'bootstrap:success',
-            payload: {
-              songs: [],
-              sequences: [],
-              drafts: [],
-              stats: { totalSongs: 0, totalSequences: 0, recentUploads: [], upcomingSequences: [] },
-              recentRoots: config.recentRoots,
-              preferences: config.preferences,
-              workspaceRoot: '',
-            },
+            payload: buildEmptyBootstrap(config, state.songCategories),
           })
+          dispatch({ type: 'startup:done' })
           return
         }
 
-        const bootstrap = await service.bootstrapApp(config.workspaceRoot)
+        updateStartup(56, 'Cargando cantos y secuencias...')
+        let bootstrap = await service.bootstrapApp(config.workspaceRoot)
+
         dispatch({
           type: 'bootstrap:success',
           payload: {
@@ -47,11 +94,65 @@ export function AppProvider({ children }) {
             preferences: config.preferences,
           },
         })
+
+        if (syncStatus?.connected && !syncStatus?.needsInitialSyncChoice) {
+          updateStartup(78, 'Sincronizando con Google Drive...')
+
+          try {
+            const result = await service.syncWorkspaceNow?.('startup', 'merge')
+            if (result) {
+              dispatch({
+                type: 'sync:set',
+                payload: {
+                  ...result,
+                  syncing: false,
+                },
+              })
+            }
+
+            bootstrap = await service.bootstrapApp(config.workspaceRoot)
+            dispatch({
+              type: 'bootstrap:success',
+              payload: {
+                ...bootstrap,
+                workspaceRoot: config.workspaceRoot,
+                recentRoots: config.recentRoots,
+                preferences: config.preferences,
+              },
+            })
+
+            const [refreshedAuthStatus, refreshedSyncStatus] = await Promise.all([
+              service.getDriveAuthStatus?.() || Promise.resolve(null),
+              service.getSyncStatus?.() || Promise.resolve(null),
+            ])
+
+            if (refreshedAuthStatus) {
+              dispatch({ type: 'driveAuth:set', payload: refreshedAuthStatus })
+            }
+            if (refreshedSyncStatus) {
+              dispatch({ type: 'sync:set', payload: refreshedSyncStatus })
+            }
+          } catch (_) {
+            updateStartup(82, 'No se pudo sincronizar con Drive. Continuando en local...')
+            const refreshedSyncStatus = await service.getSyncStatus?.().catch(() => null)
+            if (refreshedSyncStatus) {
+              dispatch({ type: 'sync:set', payload: refreshedSyncStatus })
+            }
+            await wait(260)
+          }
+        }
+
+        updateStartup(96, 'Abriendo Centro Musical...')
+        await wait(180)
+        dispatch({ type: 'startup:done' })
       } catch (error) {
         dispatch({
           type: 'bootstrap:error',
-          payload: error.message || 'No fue posible iniciar la aplicación.',
+          payload: error.message || 'No fue posible iniciar la aplicacion.',
         })
+        updateStartup(100, 'No se pudo completar el inicio. Abriendo en modo local...')
+        await wait(320)
+        dispatch({ type: 'startup:done' })
       }
     }
 
@@ -70,10 +171,12 @@ export function AppProvider({ children }) {
     })
 
     const bootstrap = await service.bootstrapApp(result.workspaceRoot)
+    const songCategories = await service.getSongCategories?.().catch(() => bootstrap.songCategories || [])
     dispatch({
       type: 'bootstrap:success',
       payload: {
         ...bootstrap,
+        songCategories,
         workspaceRoot: result.workspaceRoot,
         recentRoots: config.recentRoots,
         preferences: config.preferences,
@@ -91,9 +194,9 @@ export function AppProvider({ children }) {
   }
 
   async function saveSongCategories(categories) {
-    const preferences = await service.saveSongCategories(categories)
-    dispatch({ type: 'preferences:set', payload: preferences })
-    return preferences
+    const nextCategories = await service.saveSongCategories(categories)
+    dispatch({ type: 'songCategories:set', payload: nextCategories })
+    return nextCategories
   }
 
   async function saveMotionMode(motionMode) {
@@ -171,13 +274,114 @@ export function AppProvider({ children }) {
     await service.openExportsFolder()
   }
 
+  async function refreshSyncStatus() {
+    const [authStatus, syncStatus] = await Promise.all([
+      service.getDriveAuthStatus(),
+      service.getSyncStatus(),
+    ])
+    dispatch({ type: 'driveAuth:set', payload: authStatus })
+    dispatch({ type: 'sync:set', payload: syncStatus })
+    return { authStatus, syncStatus }
+  }
+
+  async function connectGoogleDrive() {
+    const status = await service.connectGoogleDrive()
+    dispatch({ type: 'driveAuth:set', payload: status })
+    const syncStatus = await service.getSyncStatus()
+    dispatch({ type: 'sync:set', payload: syncStatus })
+    return status
+  }
+
+  async function disconnectGoogleDrive() {
+    const status = await service.disconnectGoogleDrive()
+    dispatch({ type: 'driveAuth:set', payload: status })
+    const syncStatus = await service.getSyncStatus()
+    dispatch({ type: 'sync:set', payload: syncStatus })
+    return status
+  }
+
+  async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
+    dispatch({ type: 'sync:set', payload: { syncing: true } })
+    try {
+      const result = await service.syncWorkspaceNow(reason, mode)
+      dispatch({
+        type: 'sync:set',
+        payload: {
+          ...result,
+          syncing: false,
+          pendingConflicts: result.pendingConflicts || [],
+        },
+      })
+
+      const bootstrap = await service.bootstrapApp(state.workspaceRoot)
+      dispatch({
+        type: 'bootstrap:success',
+        payload: {
+          ...bootstrap,
+          songCategories: bootstrap.songCategories || state.songCategories,
+          workspaceRoot: state.workspaceRoot,
+          recentRoots: state.recentRoots,
+          preferences: state.preferences,
+          activeSongId: state.activeSongId,
+          activeSequenceId: state.activeSequenceId,
+        },
+      })
+
+      const [authStatus, syncStatus] = await Promise.all([
+        service.getDriveAuthStatus?.() || Promise.resolve(null),
+        service.getSyncStatus?.() || Promise.resolve(null),
+      ])
+
+      if (authStatus) {
+        dispatch({ type: 'driveAuth:set', payload: authStatus })
+      }
+      if (syncStatus) {
+        dispatch({ type: 'sync:set', payload: syncStatus })
+      }
+
+      return result
+    } catch (error) {
+      dispatch({ type: 'sync:set', payload: { syncing: false } })
+      throw error
+    }
+  }
+
+  async function resolveSyncConflict(payload) {
+    const result = await service.resolveSyncConflict(payload)
+    dispatch({
+      type: 'sync:set',
+      payload: {
+        ...result,
+        pendingConflicts: result.pendingConflicts || [],
+      },
+    })
+    const bootstrap = await service.bootstrapApp(state.workspaceRoot)
+    dispatch({
+      type: 'bootstrap:success',
+      payload: {
+        ...bootstrap,
+        songCategories: bootstrap.songCategories || state.songCategories,
+        workspaceRoot: state.workspaceRoot,
+        recentRoots: state.recentRoots,
+        preferences: state.preferences,
+        activeSongId: state.activeSongId,
+        activeSequenceId: state.activeSequenceId,
+      },
+    })
+    return result
+  }
+
+  async function exitApplication() {
+    if (service.exitApplication) {
+      return service.exitApplication()
+    }
+    return { ok: true }
+  }
+
   const filteredSongs = useMemo(() => filterSongs(state.songs, state.libraryFilters), [state.songs, state.libraryFilters])
   const activeSong = useMemo(() => selectActiveSong(state), [state.songs, state.activeSongId])
   const activeDraft = useMemo(() => selectActiveDraft(state), [state.drafts, state.activeDraftId])
-  const activeSequence = useMemo(
-    () => selectActiveSequence(state),
-    [state.sequences, state.activeSequenceId],
-  )
+  const activeSequence = useMemo(() => selectActiveSequence(state), [state.sequences, state.activeSequenceId])
 
   const value = {
     state,
@@ -191,6 +395,12 @@ export function AppProvider({ children }) {
       importSongDocxBatch,
       saveSongCategories,
       saveMotionMode,
+      refreshSyncStatus,
+      connectGoogleDrive,
+      disconnectGoogleDrive,
+      syncWorkspaceNow,
+      resolveSyncConflict,
+      exitApplication,
       saveSong,
       updateSong,
       saveSequence,
@@ -222,7 +432,16 @@ export function AppProvider({ children }) {
     },
   }
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      <StartupOverlay
+        open={state.startup.visible}
+        progress={state.startup.progress}
+        detail={state.startup.detail}
+      />
+    </AppContext.Provider>
+  )
 }
 
 export function useAppContext() {

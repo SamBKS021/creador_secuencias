@@ -96,8 +96,8 @@ function LibraryPage() {
   }, [filteredSongs, page])
 
   const songCategories = useMemo(
-    () => getSongCategories(state.preferences),
-    [state.preferences],
+    () => getSongCategories(state.songCategories),
+    [state.songCategories],
   )
 
   const hasPendingChanges = useMemo(() => {

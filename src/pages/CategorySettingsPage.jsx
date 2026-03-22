@@ -20,7 +20,7 @@ function normalizeCategoryName(value) {
 function CategorySettingsPage() {
   const navigate = useNavigate()
   const { state, actions } = useAppContext()
-  const categories = useMemo(() => getSongCategories(state.preferences), [state.preferences])
+  const categories = useMemo(() => getSongCategories(state.songCategories), [state.songCategories])
   const [draftName, setDraftName] = useState('')
   const [editingName, setEditingName] = useState('')
   const [saving, setSaving] = useState(false)

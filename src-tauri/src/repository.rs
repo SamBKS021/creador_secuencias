@@ -2,14 +2,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
 use crate::export::export_sequence_docx_path;
 use crate::importer::normalize_title;
 use crate::models::{
-    AppState, BootstrapPayload, Draft, ExportResult, Sequence, SequenceMutationResult, SequenceItem, Song,
-    SongChord, SongContentRecord, SongLine, SongMetaRecord, SongMutationResult, SongPayload, SongSection,
+    AppState, BootstrapPayload, Draft, ExportResult, ManifestEntry, ManifestRecord, Sequence, SequenceMutationResult,
+    SequenceItem, Song, SongChord, SongContentRecord, SongLine, SongMetaRecord, SongMutationResult, SongPayload,
+    SongSection,
 };
 use crate::workspace::{
     compute_stats, ensure_workspace, now_iso, read_json, write_json, WorkspacePaths,
@@ -22,12 +24,23 @@ struct LegacySongContentRecord {
     chords: String,
 }
 
+fn default_song_categories() -> Vec<String> {
+    vec![
+        "Contemporanea".into(),
+        "Adoracion".into(),
+        "Himno".into(),
+        "Destacada".into(),
+    ]
+}
+
 pub fn bootstrap(root: &Path) -> AppResult<BootstrapPayload> {
     let paths = ensure_workspace(root)?;
     migrate_legacy_workspace_files(&paths)?;
     migrate_legacy_library(&paths)?;
+    migrate_song_categories(&paths)?;
     let songs = load_songs(&paths)?;
-    let sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let sequences = load_sequences(&paths)?;
+    let song_categories = load_song_categories(&paths)?;
     let drafts: Vec<Draft> = read_json(&paths.drafts_file)?;
 
     Ok(BootstrapPayload {
@@ -35,6 +48,7 @@ pub fn bootstrap(root: &Path) -> AppResult<BootstrapPayload> {
         stats: compute_stats(&songs, &sequences),
         songs,
         sequences,
+        song_categories,
         drafts,
     })
 }
@@ -47,12 +61,34 @@ pub fn append_drafts(paths: &WorkspacePaths, mut drafts_to_add: Vec<Draft>) -> A
     Ok(drafts_to_add)
 }
 
+pub fn load_song_categories(paths: &WorkspacePaths) -> AppResult<Vec<String>> {
+    migrate_song_categories(paths)?;
+
+    let categories: Vec<String> = read_json(&paths.song_categories_file)?;
+    let sanitized = sanitize_song_categories(categories);
+
+    if sanitized.is_empty() {
+        let defaults = default_song_categories();
+        write_json(&paths.song_categories_file, &defaults)?;
+        return Ok(defaults);
+    }
+
+    Ok(sanitized)
+}
+
+pub fn save_song_categories_record(paths: &WorkspacePaths, categories: &[String]) -> AppResult<Vec<String>> {
+    let sanitized = sanitize_song_categories(categories.to_vec());
+    write_json(&paths.song_categories_file, &sanitized)?;
+    Ok(sanitized)
+}
+
 pub fn upsert_song(paths: &WorkspacePaths, payload: &SongPayload) -> AppResult<SongMutationResult> {
     migrate_legacy_workspace_files(paths)?;
     migrate_legacy_library(paths)?;
+    migrate_song_categories(paths)?;
 
     let mut drafts: Vec<Draft> = read_json(&paths.drafts_file)?;
-    let sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let sequences = load_sequences(paths)?;
     let timestamp = now_iso();
 
     let mut song = payload.song.clone();
@@ -119,19 +155,19 @@ pub fn delete_song(paths: &WorkspacePaths, song_id: &str) -> AppResult<()> {
         fs::remove_dir_all(song_dir)?;
     }
 
-    let mut sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let mut sequences = load_sequences(paths)?;
     for sequence in &mut sequences {
         sequence.items.retain(|item| item.song_id != song_id);
     }
 
-    write_json(&paths.sequences_file, &sequences)?;
+    save_sequences(paths, &sequences)?;
     Ok(())
 }
 
 pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<SequenceMutationResult> {
     migrate_legacy_workspace_files(paths)?;
     let songs = load_songs(paths)?;
-    let mut sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let mut sequences = load_sequences(paths)?;
     let timestamp = now_iso();
 
     let mut sequence = payload.clone();
@@ -167,7 +203,7 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
         None => sequences.insert(0, sequence.clone()),
     }
 
-    write_json(&paths.sequences_file, &sequences)?;
+    persist_sequence_file(paths, &sequence)?;
 
     Ok(SequenceMutationResult {
         sequence,
@@ -177,10 +213,13 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
 
 pub fn delete_sequence(paths: &WorkspacePaths, sequence_id: &str) -> AppResult<()> {
     migrate_legacy_workspace_files(paths)?;
-    let mut sequences: Vec<Sequence> = read_json(&paths.sequences_file)?;
+    let mut sequences = load_sequences(paths)?;
     let removed_sequence = sequences.iter().find(|sequence| sequence.id == sequence_id).cloned();
     sequences.retain(|sequence| sequence.id != sequence_id);
-    write_json(&paths.sequences_file, &sequences)?;
+    let sequence_file = paths.sequences_dir.join(format!("{sequence_id}.json"));
+    if sequence_file.exists() {
+        fs::remove_file(sequence_file)?;
+    }
 
     if let Some(sequence) = removed_sequence {
         let export_path = export_sequence_docx_path(&paths.root, &sequence);
@@ -227,11 +266,56 @@ pub fn load_songs(paths: &WorkspacePaths) -> AppResult<Vec<Song>> {
     Ok(songs)
 }
 
+pub fn load_sequences(paths: &WorkspacePaths) -> AppResult<Vec<Sequence>> {
+    migrate_legacy_workspace_files(paths)?;
+
+    let mut sequences = fs::read_dir(&paths.sequences_dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("json"))
+        .filter(|path| path.file_name().and_then(|value| value.to_str()) != Some("sequences.json"))
+        .filter_map(|path| read_json::<Sequence>(&path).ok())
+        .collect::<Vec<_>>();
+
+    sequences.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+    Ok(sequences)
+}
+
+pub fn save_sequences(paths: &WorkspacePaths, sequences: &[Sequence]) -> AppResult<()> {
+    let existing_files = fs::read_dir(&paths.sequences_dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("json"))
+        .collect::<Vec<_>>();
+
+    let mut expected_paths = Vec::new();
+    for sequence in sequences {
+        let path = persist_sequence_file(paths, sequence)?;
+        expected_paths.push(path);
+    }
+
+    for file in existing_files {
+        if !expected_paths.iter().any(|path| path == &file) {
+            fs::remove_file(file)?;
+        }
+    }
+
+    Ok(())
+}
+
 fn load_song_from_dir(song_dir: &Path) -> AppResult<Song> {
     let meta: SongMetaRecord = read_json(&song_dir.join("meta.json"))?;
     let content = load_song_content(&song_dir.join("content.json"))?;
 
     Ok(build_song_from_records(meta, content))
+}
+
+fn persist_sequence_file(paths: &WorkspacePaths, sequence: &Sequence) -> AppResult<PathBuf> {
+    let path = paths.sequences_dir.join(format!("{}.json", sequence.id));
+    write_json(&path, sequence)?;
+    Ok(path)
 }
 
 fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&SongContentRecord>) -> AppResult<Song> {
@@ -642,8 +726,20 @@ fn migrate_legacy_library(paths: &WorkspacePaths) -> AppResult<()> {
 }
 
 fn migrate_legacy_workspace_files(paths: &WorkspacePaths) -> AppResult<()> {
-    migrate_legacy_json_file::<Vec<Sequence>>(&paths.legacy_sequences_file, &paths.sequences_file)?;
+    migrate_sequence_bundle(paths, &paths.legacy_sequence_bundle_file)?;
+    migrate_sequence_bundle(paths, &paths.legacy_sequences_file)?;
     migrate_legacy_json_file::<Vec<Draft>>(&paths.legacy_drafts_file, &paths.drafts_file)?;
+    Ok(())
+}
+
+fn migrate_song_categories(paths: &WorkspacePaths) -> AppResult<()> {
+    let categories: Vec<String> = read_json(&paths.song_categories_file).unwrap_or_default();
+    if !categories.is_empty() {
+        return Ok(());
+    }
+
+    let defaults = default_song_categories();
+    write_json(&paths.song_categories_file, &defaults)?;
     Ok(())
 }
 
@@ -668,6 +764,20 @@ where
     }
 
     fs::remove_file(legacy_path)?;
+    Ok(())
+}
+
+fn migrate_sequence_bundle(paths: &WorkspacePaths, bundle_path: &Path) -> AppResult<()> {
+    if !bundle_path.exists() {
+        return Ok(());
+    }
+
+    let sequences: Vec<Sequence> = read_json(bundle_path)?;
+    for sequence in &sequences {
+        persist_sequence_file(paths, sequence)?;
+    }
+
+    fs::remove_file(bundle_path)?;
     Ok(())
 }
 
@@ -696,4 +806,126 @@ fn parse_song_id(song_id: &str) -> Option<usize> {
     song_id
         .strip_prefix("canto-")
         .and_then(|value| value.parse::<usize>().ok())
+}
+
+pub fn sanitize_song_categories(categories: Vec<String>) -> Vec<String> {
+    let mut sanitized = categories
+        .into_iter()
+        .map(|category| category.trim().to_string())
+        .filter(|category| !category.is_empty())
+        .fold(Vec::<String>::new(), |mut acc, category| {
+            if !acc.iter().any(|item| item.eq_ignore_ascii_case(&category)) {
+                acc.push(category);
+            }
+            acc
+        });
+
+    if sanitized.is_empty() {
+        sanitized = default_song_categories();
+    }
+
+    sanitized
+}
+
+pub fn read_manifest(paths: &WorkspacePaths) -> AppResult<ManifestRecord> {
+    read_json(&paths.manifest_file)
+}
+
+pub fn write_manifest(paths: &WorkspacePaths, manifest: &ManifestRecord) -> AppResult<()> {
+    write_json(&paths.manifest_file, manifest)
+}
+
+pub fn build_local_manifest(paths: &WorkspacePaths) -> AppResult<ManifestRecord> {
+    let previous = read_manifest(paths).unwrap_or_default();
+    let mut entries = Vec::new();
+
+    let songs = load_songs(paths)?;
+    for song in songs {
+        let song_dir = paths.library_dir.join(&song.id);
+        let meta_path = song_dir.join("meta.json");
+        let content_path = song_dir.join("content.json");
+
+        entries.push(build_manifest_entry(
+            format!("biblioteca/{}/meta.json", song.id),
+            "songMeta".into(),
+            song.id.clone(),
+            &meta_path,
+            song.updated_at.clone(),
+        )?);
+        entries.push(build_manifest_entry(
+            format!("biblioteca/{}/content.json", song.id),
+            "songContent".into(),
+            song.id.clone(),
+            &content_path,
+            song.updated_at.clone(),
+        )?);
+    }
+
+    let sequences = load_sequences(paths)?;
+    for sequence in sequences {
+        let sequence_path = paths.sequences_dir.join(format!("{}.json", sequence.id));
+        entries.push(build_manifest_entry(
+            format!("secuencias/{}.json", sequence.id),
+            "sequence".into(),
+            sequence.id.clone(),
+            &sequence_path,
+            sequence.updated_at.clone(),
+        )?);
+    }
+
+    if paths.song_categories_file.exists() {
+        let categories_updated_at = fs::metadata(&paths.song_categories_file)
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .map(chrono::DateTime::<chrono::Utc>::from)
+            .map(|value| value.to_rfc3339())
+            .unwrap_or_else(now_iso);
+
+        entries.push(build_manifest_entry(
+            ".ccp/song-categories.json".into(),
+            "songCategories".into(),
+            "song-categories".into(),
+            &paths.song_categories_file,
+            categories_updated_at,
+        )?);
+    }
+
+    for previous_entry in previous.entries {
+        if entries.iter().any(|entry| entry.logical_key == previous_entry.logical_key) {
+            continue;
+        }
+
+        if previous_entry.deleted_at.is_empty() {
+            entries.push(ManifestEntry {
+                deleted_at: now_iso(),
+                ..previous_entry
+            });
+        } else {
+            entries.push(previous_entry);
+        }
+    }
+
+    entries.sort_by(|left, right| left.logical_key.cmp(&right.logical_key));
+    Ok(ManifestRecord { entries })
+}
+
+fn build_manifest_entry(
+    logical_key: String,
+    entity_type: String,
+    entity_id: String,
+    path: &Path,
+    updated_at: String,
+) -> AppResult<ManifestEntry> {
+    let bytes = fs::read(path)?;
+    let hash = format!("{:x}", Sha256::digest(&bytes));
+
+    Ok(ManifestEntry {
+        logical_key,
+        hash,
+        updated_at,
+        deleted_at: String::new(),
+        file_id: String::new(),
+        entity_type,
+        entity_id,
+    })
 }

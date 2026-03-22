@@ -1,7 +1,10 @@
-import { Bell, FolderOpen, HelpCircle, Search } from "lucide-react";
-import { NavLink } from "react-router-dom";
-import Button from "../ui/Button.jsx";
+import { Copy, HelpCircle, Minus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import IconButton from "../ui/IconButton.jsx";
+import { isTauriRuntime } from "../../utils/platform.js";
+import service from "../../services/workspaceService.js";
 
 const topLinks = [
   { to: "/", label: "Inicio" },
@@ -10,14 +13,89 @@ const topLinks = [
   { to: "/secuencias", label: "Secuencias" }
 ];
 
-function TopBar({ workspaceRoot, onChooseWorkspace }) {
+function TopBar() {
+  const navigate = useNavigate();
+  const isDesktop = useMemo(() => isTauriRuntime(), []);
+  const appWindow = useMemo(() => (isDesktop ? getCurrentWindow() : null), [isDesktop]);
+  const [isMaximized, setIsMaximized] = useState(true);
+
+  useEffect(() => {
+    if (!appWindow) {
+      return undefined;
+    }
+
+    let removeResizeListener;
+    let mounted = true;
+
+    (async () => {
+      const maximized = await appWindow.isMaximized().catch(() => false);
+      if (mounted) {
+        setIsMaximized(maximized);
+      }
+
+      removeResizeListener = await appWindow.onResized(async () => {
+        const nextMaximized = await appWindow.isMaximized().catch(() => false);
+        if (mounted) {
+          setIsMaximized(nextMaximized);
+        }
+      });
+    })();
+
+    return () => {
+      mounted = false;
+      if (removeResizeListener) {
+        removeResizeListener();
+      }
+    };
+  }, [appWindow]);
+
+  async function handleMinimize(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!appWindow) {
+      return;
+    }
+    await service.minimizeMainWindow();
+  }
+
+  async function handleToggleMaximize(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!appWindow) {
+      return;
+    }
+    await service.toggleMaximizeMainWindow();
+    const maximized = await appWindow.isMaximized().catch(() => false);
+    setIsMaximized(maximized);
+  }
+
+  async function handleClose(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!appWindow) {
+      return;
+    }
+    await service.closeMainWindow();
+  }
+
   return (
-    <header className="glass-panel fixed inset-x-0 top-0 z-40 border-b border-white/30 px-4 py-4 lg:px-8">
+    <header className="shrink-0 border-b border-[rgba(0,36,70,0.08)] bg-white/95 px-4 py-3 backdrop-blur-sm lg:px-8">
       <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-6">
-          <p className="font-headline text-lg font-extrabold uppercase tracking-[0.22em] text-[var(--primary)]">
-            Centro Cristiano Palmas
-          </p>
+          <div
+            data-tauri-drag-region={isDesktop ? true : undefined}
+            className="flex min-w-0 items-center"
+          >
+            <p className="select-none font-headline text-lg font-extrabold uppercase tracking-[0.22em] text-[var(--primary)]">
+              Centro Cristiano Palmas
+            </p>
+          </div>
+
+          <div
+            data-tauri-drag-region={isDesktop ? true : undefined}
+            className="hidden h-10 min-w-10 flex-1 lg:block"
+          />
+
           <nav className="hidden items-center gap-5 lg:flex">
             {topLinks.map((link) => (
               <NavLink
@@ -39,23 +117,47 @@ function TopBar({ workspaceRoot, onChooseWorkspace }) {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
-          <div className="hidden items-center gap-3 rounded-full bg-[var(--surface-container)] px-4 py-2 text-sm text-[var(--outline)] lg:flex">
-            <Search size={16} />
-            <span>{workspaceRoot || "Sin carpeta de trabajo"}</span>
-          </div>
-          <Button
-            variant="secondary"
-            className="hidden lg:inline-flex"
-            onClick={onChooseWorkspace}
-          >
-            <FolderOpen size={16} />
-            {workspaceRoot ? "Cambiar carpeta" : "Elegir carpeta"}
-          </Button>
-          <IconButton icon={Bell} aria-label="Notificaciones" />
-          <IconButton icon={HelpCircle} aria-label="Ayuda" />
+          <IconButton
+            icon={HelpCircle}
+            aria-label="Ayuda"
+            onClick={() => navigate("/ayuda")}
+            className="text-[var(--primary)]"
+          />
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(171,200,245,0.9)] bg-[var(--tertiary-fixed)] text-xs font-bold text-[var(--primary)]">
-            SL
+            CCP
           </div>
+
+          {isDesktop ? (
+            <div className="ml-2 flex items-center rounded-full border border-[rgba(0,36,70,0.08)] bg-[var(--surface-container-low)] p-1">
+              <button
+                type="button"
+                data-tauri-drag-region={false}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-white"
+                aria-label="Minimizar"
+                onClick={handleMinimize}
+              >
+                <Minus size={16} />
+              </button>
+              <button
+                type="button"
+                data-tauri-drag-region={false}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-white"
+                aria-label={isMaximized ? "Restaurar" : "Maximizar"}
+                onClick={handleToggleMaximize}
+              >
+                <Copy size={15} />
+              </button>
+              <button
+                type="button"
+                data-tauri-drag-region={false}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-[rgba(186,26,26,0.1)] hover:text-[var(--error)]"
+                aria-label="Cerrar"
+                onClick={handleClose}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

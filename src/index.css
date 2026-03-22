@@ -36,19 +36,21 @@
 }
 
 html {
+  height: 100%;
   min-width: 320px;
-  background: var(--surface);
+  background: transparent;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
+  height: 100%;
   min-width: 320px;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
   color: var(--on-surface);
-  background:
-    radial-gradient(circle at top left, rgba(171, 200, 245, 0.22), transparent 30%),
-    linear-gradient(180deg, #fbfcfe 0%, var(--surface) 34%, #eef2f8 100%);
+  background: transparent;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -70,6 +72,7 @@ button {
 }
 
 #root {
+  height: 100%;
   min-height: 100vh;
 }
 
@@ -98,6 +101,46 @@ button {
   background:
     radial-gradient(circle at right top, rgba(203, 231, 245, 0.28), transparent 24%),
     radial-gradient(circle at left 40%, rgba(240, 189, 127, 0.08), transparent 30%);
+}
+
+.page-shell {
+  background:
+    radial-gradient(circle at top left, rgba(171, 200, 245, 0.22), transparent 30%),
+    linear-gradient(180deg, #fbfcfe 0%, var(--surface) 34%, #eef2f8 100%);
+}
+
+.app-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(67, 71, 78, 0.36) rgba(0, 0, 0, 0);
+  scrollbar-gutter: stable;
+}
+
+.app-scroll::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+.app-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(67, 71, 78, 0.28);
+}
+
+.app-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(67, 71, 78, 0.42);
+}
+
+.startup-title {
+  animation: startup-title-enter 760ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.startup-subtitle {
+  animation: startup-subtitle-enter 860ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .page-shell[data-motion-mode='normal'] .motion-page {
@@ -189,6 +232,28 @@ button {
   }
 }
 
+@keyframes startup-title-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes startup-subtitle-enter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 [data-sileo-viewport] {
-  z-index: 120 !important;
+  z-index: 260 !important;
 }

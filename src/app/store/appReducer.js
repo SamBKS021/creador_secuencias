@@ -10,13 +10,34 @@ import {
 export const initialState = {
   platformMode: 'web',
   loading: true,
+  startup: {
+    visible: true,
+    progress: 6,
+    detail: 'Preparando aplicacion...',
+  },
   workspaceRoot: '',
   recentRoots: [],
+  songCategories: defaultSongCategories,
   preferences: {
     locale: 'es-MX',
     compactSidebar: false,
-    songCategories: defaultSongCategories,
     motionMode: 'normal',
+  },
+  driveAuthStatus: {
+    configured: false,
+    connected: false,
+    connectedAccountEmail: '',
+  },
+  syncStatus: {
+    configured: false,
+    connected: false,
+    connectedAccountEmail: '',
+    lastSyncedAccountEmail: '',
+    needsInitialSyncChoice: false,
+    syncing: false,
+    lastSyncAt: '',
+    lastSyncResult: '',
+    pendingConflicts: [],
   },
   songs: [],
   sequences: [],
@@ -40,6 +61,24 @@ export function appReducer(state, action) {
         loading: true,
         error: '',
       }
+    case 'startup:set':
+      return {
+        ...state,
+        startup: {
+          ...state.startup,
+          ...action.payload,
+        },
+      }
+    case 'startup:done':
+      return {
+        ...state,
+        startup: {
+          ...state.startup,
+          visible: false,
+          progress: 100,
+          detail: 'Listo.',
+        },
+      }
     case 'bootstrap:success':
       return {
         ...state,
@@ -48,6 +87,7 @@ export function appReducer(state, action) {
         workspaceRoot: action.payload.workspaceRoot || state.workspaceRoot,
         recentRoots: action.payload.recentRoots || state.recentRoots,
         preferences: action.payload.preferences || state.preferences,
+        songCategories: action.payload.songCategories || state.songCategories,
         songs: action.payload.songs || [],
         sequences: action.payload.sequences || [],
         drafts: action.payload.drafts || [],
@@ -74,6 +114,27 @@ export function appReducer(state, action) {
         ...state,
         preferences: {
           ...state.preferences,
+          ...action.payload,
+        },
+      }
+    case 'songCategories:set':
+      return {
+        ...state,
+        songCategories: action.payload?.length ? action.payload : state.songCategories,
+      }
+    case 'driveAuth:set':
+      return {
+        ...state,
+        driveAuthStatus: {
+          ...state.driveAuthStatus,
+          ...action.payload,
+        },
+      }
+    case 'sync:set':
+      return {
+        ...state,
+        syncStatus: {
+          ...state.syncStatus,
           ...action.payload,
         },
       }

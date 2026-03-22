@@ -7,8 +7,8 @@ const DEFAULT_FILTERS = {
 
 export const defaultSongCategories = ['Contemporanea', 'Adoracion', 'Himno', 'Destacada']
 
-export function getSongCategories(preferences) {
-  const source = preferences?.songCategories
+export function getSongCategories(sourceValue) {
+  const source = Array.isArray(sourceValue) ? sourceValue : sourceValue?.songCategories
   if (!Array.isArray(source) || !source.length) {
     return defaultSongCategories
   }

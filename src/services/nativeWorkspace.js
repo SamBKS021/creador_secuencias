@@ -4,6 +4,10 @@ export function getWorkspaceConfig() {
   return invoke('get_workspace_config')
 }
 
+export function getSongCategories() {
+  return invoke('get_song_categories')
+}
+
 export function saveSongCategories(categories) {
   return invoke('save_song_categories', { categories })
 }
@@ -18,6 +22,46 @@ export function selectWorkspaceRoot() {
 
 export function bootstrapApp(workspaceRoot) {
   return invoke('bootstrap_app', { workspaceRoot })
+}
+
+export function getDriveAuthStatus() {
+  return invoke('get_drive_auth_status')
+}
+
+export function connectGoogleDrive() {
+  return invoke('connect_google_drive')
+}
+
+export function disconnectGoogleDrive() {
+  return invoke('disconnect_google_drive')
+}
+
+export function getSyncStatus() {
+  return invoke('get_sync_status')
+}
+
+export function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
+  return invoke('sync_workspace_now', { reason, mode })
+}
+
+export function resolveSyncConflict(payload) {
+  return invoke('resolve_sync_conflict', { payload })
+}
+
+export function exitApplication() {
+  return invoke('exit_application')
+}
+
+export function minimizeMainWindow() {
+  return invoke('minimize_main_window')
+}
+
+export function toggleMaximizeMainWindow() {
+  return invoke('toggle_maximize_main_window')
+}
+
+export function closeMainWindow() {
+  return invoke('close_main_window')
 }
 
 export function openSongFiles() {
