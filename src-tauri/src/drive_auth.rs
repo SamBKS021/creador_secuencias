@@ -1,4 +1,3 @@
-use std::env;
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::time::Duration;
@@ -91,9 +90,14 @@ fn load_or_seed_oauth_config(app: &AppHandle) -> AppResult<OAuthLocalConfig> {
         return Ok(oauth_config);
     }
 
-    dotenvy::dotenv().ok();
-    let client_id = env::var("GOOGLE_DRIVE_CLIENT_ID").unwrap_or_default();
-    let client_secret = env::var("GOOGLE_DRIVE_CLIENT_SECRET").unwrap_or_default();
+    let client_id = option_env!("GOOGLE_DRIVE_CLIENT_ID")
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let client_secret = option_env!("GOOGLE_DRIVE_CLIENT_SECRET")
+        .unwrap_or_default()
+        .trim()
+        .to_string();
 
     if client_id.is_empty() || client_secret.is_empty() {
         return Ok(oauth_config);
