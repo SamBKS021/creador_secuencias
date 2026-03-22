@@ -101,7 +101,7 @@ function UpdatesPage() {
           actions={
             <Button variant="outline" onClick={handleCheck} disabled={state.updateStatus.checking || state.updateStatus.installing}>
               <RefreshCcw size={16} />
-              Buscar de nuevo
+              Buscar actualizaciones
             </Button>
           }
         />
