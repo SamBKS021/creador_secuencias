@@ -4,6 +4,7 @@ use reqwest::{StatusCode, Url};
 use semver::Version;
 use serde::Deserialize;
 use tauri::AppHandle;
+use tauri_plugin_updater::UpdaterExt;
 
 use crate::drive_auth::access_token_from_refresh;
 use crate::drive_client::load_update_notice_manifest;
@@ -199,14 +200,32 @@ pub async fn check_app_update(app: &AppHandle) -> AppResult<AppUpdateStatus> {
     })
 }
 
-pub async fn install_app_update(_app: AppHandle) -> AppResult<OperationResult> {
-    let Some((_endpoint, _public_key)) = updater_runtime_config() else {
+pub async fn install_app_update(app: AppHandle) -> AppResult<OperationResult> {
+    let Some((endpoint, public_key)) = updater_runtime_config() else {
         return Err(AppError::from(
             "El updater no está configurado en este build. Falta APP_UPDATE_ENDPOINT o TAURI_UPDATER_PUBLIC_KEY.",
         ));
     };
 
-    Err(AppError::from(
-        "La instalación automática del update todavía no está habilitada en este instalador. Primero validaremos el primer release publicado en GitHub.",
-    ))
+    let endpoint =
+        Url::parse(&endpoint).map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    let update = app
+        .updater_builder()
+        .endpoints(vec![endpoint])
+        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .pubkey(public_key)
+        .build()
+        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .check()
+        .await
+        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .ok_or_else(|| AppError::from("No hay una actualización pendiente para instalar."))?;
+
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    Ok(OperationResult { ok: true })
 }
