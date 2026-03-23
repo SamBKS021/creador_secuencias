@@ -13,6 +13,8 @@ use crate::errors::{AppError, AppResult};
 use crate::models::{DriveAuthStatus, OAuthLocalConfig};
 use crate::workspace::{load_oauth_config, save_oauth_config};
 
+const BUNDLED_OAUTH_DEFAULTS: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/oauth.defaults.json"));
 const TOKEN_SERVICE: &str = "creador_de_secuencias_google_drive";
 const TOKEN_USERNAME: &str = "refresh_token";
 const AUTH_SCOPE: &str =
@@ -106,6 +108,13 @@ fn load_or_seed_oauth_config(app: &AppHandle) -> AppResult<OAuthLocalConfig> {
         return Ok(oauth_config);
     }
 
+    if let Some(bundled) = load_embedded_oauth_config() {
+        oauth_config.client_id = bundled.client_id;
+        oauth_config.client_secret = bundled.client_secret;
+        save_oauth_config(app, &oauth_config)?;
+        return Ok(oauth_config);
+    }
+
     if let Some(bundled) = load_bundled_oauth_config(app)? {
         oauth_config.client_id = bundled.client_id;
         oauth_config.client_secret = bundled.client_secret;
@@ -113,6 +122,15 @@ fn load_or_seed_oauth_config(app: &AppHandle) -> AppResult<OAuthLocalConfig> {
     }
 
     Ok(oauth_config)
+}
+
+fn load_embedded_oauth_config() -> Option<OAuthLocalConfig> {
+    let config = serde_json::from_str::<OAuthLocalConfig>(BUNDLED_OAUTH_DEFAULTS).ok()?;
+    if config.client_id.trim().is_empty() || config.client_secret.trim().is_empty() {
+        return None;
+    }
+
+    Some(config)
 }
 
 fn load_bundled_oauth_config(app: &AppHandle) -> AppResult<Option<OAuthLocalConfig>> {

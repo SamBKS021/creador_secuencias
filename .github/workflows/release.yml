@@ -32,6 +32,18 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
+      - name: Seed Drive OAuth defaults
+        shell: pwsh
+        env:
+          GOOGLE_DRIVE_CLIENT_ID: ${{ secrets.GOOGLE_DRIVE_CLIENT_ID }}
+          GOOGLE_DRIVE_CLIENT_SECRET: ${{ secrets.GOOGLE_DRIVE_CLIENT_SECRET }}
+        run: |
+          $payload = @{
+            clientId = "$env:GOOGLE_DRIVE_CLIENT_ID"
+            clientSecret = "$env:GOOGLE_DRIVE_CLIENT_SECRET"
+          } | ConvertTo-Json
+          Set-Content -Path "src-tauri/oauth.defaults.json" -Value $payload -Encoding UTF8
+
       - name: Build and publish release
         uses: tauri-apps/tauri-action@v0
         env:

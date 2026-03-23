@@ -30,14 +30,22 @@ fn main() {
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("."));
     let oauth_defaults_path = manifest_dir.join("oauth.defaults.json");
-    let oauth_defaults = serde_json::json!({
-        "clientId": std::env::var("GOOGLE_DRIVE_CLIENT_ID").unwrap_or_default(),
-        "clientSecret": std::env::var("GOOGLE_DRIVE_CLIENT_SECRET").unwrap_or_default(),
-    });
-    let _ = fs::write(
-        &oauth_defaults_path,
-        serde_json::to_string_pretty(&oauth_defaults).unwrap_or_else(|_| "{}".into()),
-    );
+    let client_id = std::env::var("GOOGLE_DRIVE_CLIENT_ID").unwrap_or_default();
+    let client_secret = std::env::var("GOOGLE_DRIVE_CLIENT_SECRET").unwrap_or_default();
+
+    if !client_id.trim().is_empty() && !client_secret.trim().is_empty() {
+        let oauth_defaults = serde_json::json!({
+            "clientId": client_id,
+            "clientSecret": client_secret,
+        });
+        let _ = fs::write(
+            &oauth_defaults_path,
+            serde_json::to_string_pretty(&oauth_defaults).unwrap_or_else(|_| "{}".into()),
+        );
+    } else if !oauth_defaults_path.exists() {
+        let _ = fs::write(&oauth_defaults_path, "{}");
+    }
+
     println!("cargo:rerun-if-changed={}", oauth_defaults_path.display());
 
     tauri_build::build()
