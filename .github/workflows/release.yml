@@ -41,8 +41,9 @@ jobs:
           $payload = @{
             clientId = "$env:GOOGLE_DRIVE_CLIENT_ID"
             clientSecret = "$env:GOOGLE_DRIVE_CLIENT_SECRET"
-          } | ConvertTo-Json
-          Set-Content -Path "src-tauri/oauth.defaults.json" -Value $payload -Encoding UTF8
+          } | ConvertTo-Json -Compress
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [System.IO.File]::WriteAllText((Join-Path $PWD "src-tauri/oauth.defaults.json"), $payload, $utf8NoBom)
 
       - name: Build and publish release
         uses: tauri-apps/tauri-action@v0

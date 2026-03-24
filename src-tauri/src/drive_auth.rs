@@ -125,7 +125,7 @@ fn load_or_seed_oauth_config(app: &AppHandle) -> AppResult<OAuthLocalConfig> {
 }
 
 fn load_embedded_oauth_config() -> Option<OAuthLocalConfig> {
-    let config = serde_json::from_str::<OAuthLocalConfig>(BUNDLED_OAUTH_DEFAULTS).ok()?;
+    let config = parse_oauth_defaults_json(BUNDLED_OAUTH_DEFAULTS)?;
     if config.client_id.trim().is_empty() || config.client_secret.trim().is_empty() {
         return None;
     }
@@ -143,16 +143,25 @@ fn load_bundled_oauth_config(app: &AppHandle) -> AppResult<Option<OAuthLocalConf
         return Ok(None);
     }
 
-    let config = serde_json::from_str::<OAuthLocalConfig>(
-        &std::fs::read_to_string(path).map_err(|error| AppError::from(error.to_string().as_str()))?,
-    )
-    .map_err(|error| AppError::from(error.to_string().as_str()))?;
+    let raw = std::fs::read_to_string(path).map_err(|error| AppError::from(error.to_string().as_str()))?;
+    let Some(config) = parse_oauth_defaults_json(&raw) else {
+        return Ok(None);
+    };
 
     if config.client_id.trim().is_empty() || config.client_secret.trim().is_empty() {
         return Ok(None);
     }
 
     Ok(Some(config))
+}
+
+fn parse_oauth_defaults_json(raw: &str) -> Option<OAuthLocalConfig> {
+    let sanitized = raw.trim().trim_start_matches('\u{feff}');
+    if sanitized.is_empty() || sanitized == "{}" {
+        return None;
+    }
+
+    serde_json::from_str::<OAuthLocalConfig>(sanitized).ok()
 }
 
 fn wait_for_oauth_code(client_id: &str) -> AppResult<(String, String)> {
