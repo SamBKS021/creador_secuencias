@@ -215,6 +215,16 @@ export async function getWorkspaceConfig() {
   return readConfig()
 }
 
+export async function getSupportConfig() {
+  return {
+    configured: true,
+    recipientEmail: 'ccp.centromusical.soporte@gmail.com',
+    allowedExtensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'pdf', 'docx'],
+    maxAttachments: 5,
+    maxTotalBytes: 20 * 1024 * 1024,
+  }
+}
+
 export async function getSongCategories() {
   return readData().songCategories || defaultSongCategories
 }
@@ -407,6 +417,7 @@ export async function installAppUpdate() {
 }
 
 export async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
+  void reason
   const auth = await getDriveAuthStatus()
   const lastSyncAt = localStorage.getItem(`${DATA_KEY}-last-sync-at`) || ''
   if (auth.connected && auth.connectedAccountEmail && !lastSyncAt && mode === 'merge') {
@@ -713,4 +724,11 @@ export async function exportSequenceDocx(sequenceId, overwrite = false) {
 
 export async function openExportsFolder() {
   return { ok: true }
+}
+
+export async function sendSupportRequest() {
+  return {
+    ok: true,
+    messageId: `mock-support-${Date.now()}`,
+  }
 }

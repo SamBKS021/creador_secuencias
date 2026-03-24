@@ -225,6 +225,45 @@ pub struct OperationResult {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 #[serde(rename_all = "camelCase")]
+pub struct SupportConfig {
+    pub configured: bool,
+    pub recipient_email: String,
+    pub allowed_extensions: Vec<String>,
+    pub max_attachments: usize,
+    pub max_total_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportAttachment {
+    pub file_name: String,
+    pub file_path: String,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportRequestPayload {
+    pub request_type: String,
+    pub contact_name: String,
+    pub subject: String,
+    pub message: String,
+    pub attachments: Vec<SupportAttachment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
+pub struct SupportSubmissionResult {
+    pub ok: bool,
+    pub message_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+#[serde(rename_all = "camelCase")]
 pub struct OAuthLocalConfig {
     pub client_id: String,
     pub client_secret: String,

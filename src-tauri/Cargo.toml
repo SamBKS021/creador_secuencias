@@ -1,6 +1,6 @@
 [package]
 name = "creador_de_secuencias"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 
 [lib]
@@ -17,6 +17,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dotenvy = "0.15"
 docx-rs = "0.4"
 keyring = "3"
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "hostname", "pool", "rustls-tls"] }
 open = "5"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "multipart", "rustls-tls"] }

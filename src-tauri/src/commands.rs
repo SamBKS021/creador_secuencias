@@ -14,13 +14,16 @@ use crate::importer::{import_docx_batch, normalize_title};
 use crate::models::{
     AppUpdateStatus, Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult,
     Preferences, ResolveConflictPayload, Sequence, SequenceExportStatus, SequenceMutationResult, Song,
-    SongMutationResult, SongPayload, SyncResult, SyncStatus, UpdateNoticeManifest, WorkspaceConfig,
-    WorkspaceSelection,
+    SongMutationResult, SongPayload, SupportConfig, SupportRequestPayload, SupportSubmissionResult, SyncResult,
+    SyncStatus, UpdateNoticeManifest, WorkspaceConfig, WorkspaceSelection,
 };
 use crate::repository::{
     append_drafts, bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record,
     export_metadata, load_sequences, load_song_categories, load_songs, resolve_paths, save_song_categories_record,
     upsert_sequence, upsert_song,
+};
+use crate::support::{
+    build_attachment_metadata, get_support_config as load_support_config, send_support_request as dispatch_support_request,
 };
 use crate::sync::{get_sync_status as load_sync_status, resolve_sync_conflict as run_conflict_resolution, sync_workspace_now as run_sync};
 use crate::update::{
@@ -47,9 +50,36 @@ fn pick_docx_files(app: &AppHandle) -> Option<Vec<PathBuf>> {
         .map(|files| files.into_iter().filter_map(file_path_to_pathbuf).collect::<Vec<_>>())
 }
 
+fn pick_support_files(app: &AppHandle) -> Option<Vec<PathBuf>> {
+    app.dialog()
+        .file()
+        .add_filter("Adjuntos de soporte", &["png", "jpg", "jpeg", "webp", "gif", "pdf", "docx"])
+        .blocking_pick_files()
+        .map(|files| files.into_iter().filter_map(file_path_to_pathbuf).collect::<Vec<_>>())
+}
+
 #[tauri::command]
 pub fn get_workspace_config(app: AppHandle) -> Result<WorkspaceConfig, String> {
     ensure_managed_workspace_config(&app).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn get_support_config() -> Result<SupportConfig, String> {
+    Ok(load_support_config())
+}
+
+#[tauri::command]
+pub fn pick_support_attachments(app: AppHandle) -> Result<Vec<crate::models::SupportAttachment>, String> {
+    let Some(files) = pick_support_files(&app) else {
+        return Ok(Vec::new());
+    };
+
+    build_attachment_metadata(files).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub fn send_support_request(payload: SupportRequestPayload) -> Result<SupportSubmissionResult, String> {
+    dispatch_support_request(&payload).map_err(|error| error.to_string())
 }
 
 #[tauri::command]

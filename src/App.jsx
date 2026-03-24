@@ -13,6 +13,7 @@ import UpdatesPage from './pages/UpdatesPage.jsx'
 import SequenceBuilderPage from './pages/SequenceBuilderPage.jsx'
 import SequencesPage from './pages/SequencesPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import SupportPage from './pages/SupportPage.jsx'
 import UploadPage from './pages/UploadPage.jsx'
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
             <Route path="/ajustes/temas" element={<ThemeSettingsPage />} />
             <Route path="/ajustes/drive" element={<DriveSyncSettingsPage />} />
             <Route path="/ayuda" element={<HelpPage />} />
+            <Route path="/soporte" element={<SupportPage />} />
             <Route path="/actualizaciones" element={<UpdatesPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

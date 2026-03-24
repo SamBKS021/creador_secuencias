@@ -8,6 +8,7 @@ mod export;
 mod importer;
 mod models;
 mod repository;
+mod support;
 mod sync;
 mod sync_manifest;
 mod update;
@@ -28,6 +29,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_workspace_config,
+            commands::get_support_config,
             commands::get_song_categories,
             commands::save_song_categories,
             commands::save_motion_mode,
@@ -49,6 +51,8 @@ pub fn run() {
             commands::close_main_window,
             commands::select_workspace_root,
             commands::bootstrap_app,
+            commands::pick_support_attachments,
+            commands::send_support_request,
             commands::open_song_files,
             commands::import_song_docx_batch,
             commands::save_song,

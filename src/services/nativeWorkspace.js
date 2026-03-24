@@ -4,6 +4,18 @@ export function getWorkspaceConfig() {
   return invoke('get_workspace_config')
 }
 
+export function getSupportConfig() {
+  return invoke('get_support_config')
+}
+
+export function pickSupportAttachments() {
+  return invoke('pick_support_attachments')
+}
+
+export function sendSupportRequest(payload) {
+  return invoke('send_support_request', { payload })
+}
+
 export function getSongCategories() {
   return invoke('get_song_categories')
 }

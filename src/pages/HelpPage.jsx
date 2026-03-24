@@ -138,13 +138,32 @@ const sections = [
       "La barra superior, los menus laterales y esta guia estan pensados para ayudarte a llegar rapido a cada modulo.",
     highlights: [
       "La barra superior mantiene accesos directos a las vistas principales.",
-      "El icono de ayuda abre esta documentacion integrada.",
-      "La sidebar concentra la navegacion principal y los accesos a Ajustes y Soporte.",
+      "El icono de ayuda con el signo ? abre esta documentacion integrada en cualquier momento.",
+      "La sidebar concentra la navegacion principal y deja Soporte como un flujo separado de contacto.",
     ],
     tips: [
       "Usa Inicio como pivote y la sidebar para saltar entre modulos sin perder contexto.",
       "Si ves una campana activa, revisa Actualizaciones antes de seguir trabajando.",
-      "Esta guia esta pensada para leerse por bloques, no como lista larga.",
+      "Cuando necesites reportar algo, entra a Soporte en lugar de mezclarlo con la guia.",
+    ],
+  },
+  {
+    id: "soporte",
+    label: "Soporte",
+    icon: Sparkles,
+    eyebrow: "Contacto y seguimiento",
+    title: "Como enviar errores y propuestas de mejora",
+    summary:
+      "La seccion Soporte quedo reservada para contacto operativo. Desde aqui puedes enviar correos al buzon del equipo sin salir de la app, con asunto armado automaticamente segun el tipo de solicitud.",
+    highlights: [
+      "Puedes elegir entre reportar un error o proponer una mejora antes de redactar el mensaje.",
+      "El formulario pide tu nombre, una cabecera corta y el detalle completo de lo que quieres enviar; no necesitas escribir el asunto completo a mano.",
+      "Admite imagenes, archivos PDF y documentos DOCX para explicar mejor el caso y los manda junto al correo.",
+    ],
+    tips: [
+      "Si vas a reportar un error, explica que intentabas hacer, que paso y si puedes repetirlo.",
+      "La cabecera que escribes se usa para completar el asunto final junto con el prefijo [BUG] o [MEJORA] y tu nombre.",
+      "La app agrega la version y la plataforma al final del correo sin mostrartelo en pantalla, asi que tu solo concentrate en describir bien el caso.",
     ],
   },
   {
@@ -200,7 +219,7 @@ function HelpPage() {
       <PageHeader
         eyebrow="Guia"
         title="Centro de ayuda"
-        description="Consulta que hace cada seccion de la aplicacion y como aprovechar el flujo completo de cantos, secuencias y sincronizacion."
+        description="Consulta que hace cada seccion de la aplicacion, como navegarla desde el boton ? y en que momento conviene usar Soporte para enviar errores o propuestas al equipo."
       />
 
       <div className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -217,14 +236,15 @@ function HelpPage() {
               </div>
 
               <nav className="sidebar-scroll max-h-[calc(100vh-17rem)] space-y-2 overflow-y-auto pr-2">
-                {sections.map(({ id, label, icon: Icon }) => {
-                  const active = id === selectedId;
+                {sections.map((section) => {
+                  const active = section.id === selectedId;
+                  const SectionIcon = section.icon;
 
                   return (
                     <button
-                      key={id}
+                      key={section.id}
                       type="button"
-                      onClick={() => setSelectedId(id)}
+                      onClick={() => setSelectedId(section.id)}
                       className={[
                         "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition",
                         active
@@ -233,9 +253,9 @@ function HelpPage() {
                       ].join(" ")}
                     >
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--surface-container-lowest)] text-[var(--primary)]">
-                        <Icon size={16} />
+                        <SectionIcon size={16} />
                       </span>
-                      <span>{label}</span>
+                      <span>{section.label}</span>
                     </button>
                   );
                 })}

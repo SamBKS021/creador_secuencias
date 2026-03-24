@@ -72,7 +72,7 @@ function SideNav() {
             Ajustes
           </NavLink>
           <NavLink
-            to="/ayuda"
+            to="/soporte"
             className={({ isActive }) =>
               [
                 "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition",
