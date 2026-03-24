@@ -64,7 +64,7 @@ export function filterSongs(songs, filters) {
       normalized.tempo === 'Cualquiera' ||
       (normalized.tempo === 'Lento' && Number(song.tempo) < 70) ||
       (normalized.tempo === 'Medio' && Number(song.tempo) >= 70 && Number(song.tempo) <= 110) ||
-      (normalized.tempo === 'Rapido' && Number(song.tempo) > 110)
+      (normalized.tempo === 'Rápido' && Number(song.tempo) > 110)
 
     return matchesSearch && matchesCategory && matchesTempo
   })

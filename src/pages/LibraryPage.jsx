@@ -31,9 +31,7 @@ function Pagination({ page, totalPages, onChange }) {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-[var(--surface-container-low)] px-4 py-4">
-      <p className="text-sm text-[var(--on-surface-variant)]">
-        Pagina {page} de {totalPages}
-      </p>
+      <p className="text-sm text-[var(--on-surface-variant)]">Página {page} de {totalPages}</p>
 
       <div className="flex items-center gap-2">
         <Button variant="ghost" onClick={() => onChange(page - 1)} disabled={page === 1}>
@@ -50,7 +48,7 @@ function Pagination({ page, totalPages, onChange }) {
                 'h-10 min-w-10 rounded-xl px-3 text-sm font-semibold transition',
                 pageNumber === page
                   ? 'cta-gradient text-white shadow-[0_14px_30px_-18px_rgba(0,36,70,0.7)]'
-                  : 'bg-white text-[var(--primary)] hover:bg-[var(--primary-fixed)]',
+                  : 'bg-[var(--surface-container-lowest)] text-[var(--primary)] hover:bg-[var(--secondary-container)]',
               ].join(' ')}
               onClick={() => onChange(pageNumber)}
             >
@@ -95,10 +93,7 @@ function LibraryPage() {
     return filteredSongs.slice(start, start + SONGS_PER_PAGE)
   }, [filteredSongs, page])
 
-  const songCategories = useMemo(
-    () => getSongCategories(state.songCategories),
-    [state.songCategories],
-  )
+  const songCategories = useMemo(() => getSongCategories(state.songCategories), [state.songCategories])
 
   const hasPendingChanges = useMemo(() => {
     if (!form.id || !activeSong?.id) {
@@ -111,9 +106,9 @@ function LibraryPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="La biblioteca necesita una carpeta de trabajo"
-        description="Primero define la raiz donde vivira la biblioteca local junto con secuencias y exportaciones."
-        action={<Button onClick={actions.chooseWorkspace}>Elegir carpeta de trabajo</Button>}
+        title="La biblioteca necesita almacenamiento local listo"
+        description="Primero prepara el espacio de trabajo administrado por la app para guardar cantos, secuencias y exportaciones."
+        action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
     )
   }
@@ -122,14 +117,10 @@ function LibraryPage() {
     <div className="space-y-8">
       <PageHeader
         title="Biblioteca de canciones"
-        description="Administra repertorio, tonalidades, tempo y letra con una estructura lista para crecer hacia una app de escritorio completa."
+        description="Edita repertorio, tonalidades, tempo y letra desde una vista pensada para trabajo diario."
       />
 
-      <FilterBar
-        filters={state.libraryFilters}
-        categories={songCategories}
-        onChange={actions.setLibraryFilters}
-      />
+      <FilterBar filters={state.libraryFilters} categories={songCategories} onChange={actions.setLibraryFilters} />
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
         <div className="space-y-5">
@@ -157,7 +148,7 @@ function LibraryPage() {
         <div className="space-y-4">
           {form.id ? (
             <DraftEditor
-              title="Editar cancion"
+              title="Editar canción"
               subtitle="Actualiza metadatos, letra y tono del canto seleccionado."
               value={form}
               categories={songCategories}
@@ -170,7 +161,7 @@ function LibraryPage() {
                 await actions.updateSong(form)
                 sileo.success({
                   title: 'Canto actualizado',
-                  description: `${form.title || 'El canto'} se guardo correctamente en la biblioteca.`,
+                  description: `${form.title || 'El canto'} quedó actualizado en la biblioteca.`,
                 })
               }}
               submitLabel="Guardar cambios"

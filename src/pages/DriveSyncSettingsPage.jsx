@@ -13,41 +13,41 @@ function FirstSyncChoiceModal({ open, loading, onCancel, onChoose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-[rgba(10,24,40,0.38)] px-4">
-      <div className="w-full max-w-2xl rounded-[28px] bg-white p-6 shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-[var(--modal-scrim)] px-4">
+      <div className="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]">
         <div className="space-y-3">
           <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
-            Primera sincronizacion
+            Primera sincronización
           </p>
           <h4 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
-            Elige de donde tomar la base inicial
+            Elige de dónde tomar la base inicial
           </h4>
           <p className="text-sm leading-6 text-[var(--on-surface-variant)]">
-            Como esta cuenta aun no tiene una base confirmada para este equipo, primero decide si quieres subir lo
-            que ya tienes en local o bajar lo que ya este guardado en Drive.
+            Como esta cuenta aún no tiene una base confirmada para este equipo, primero decide si quieres subir lo
+            que ya tienes en local o bajar lo que ya está guardado en Drive.
           </p>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <button
-            className="rounded-[24px] border border-[rgba(67,71,78,0.16)] bg-white p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-[24px] border border-[rgba(67,71,78,0.16)] bg-[var(--surface-container-lowest)] p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={loading}
             onClick={() => onChoose('push')}
           >
             <p className="font-headline text-xl font-extrabold text-[var(--primary)]">Usar este equipo</p>
             <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
-              Sube a Drive los cantos, secuencias y categorias que ya tienes en esta computadora.
+              Sube a Drive los cantos, secuencias y categorías que ya tienes en esta computadora.
             </p>
           </button>
 
           <button
-            className="rounded-[24px] border border-[rgba(67,71,78,0.16)] bg-white p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-[24px] border border-[rgba(67,71,78,0.16)] bg-[var(--surface-container-lowest)] p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={loading}
             onClick={() => onChoose('pull')}
           >
             <p className="font-headline text-xl font-extrabold text-[var(--primary)]">Traer desde Drive</p>
             <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
-              Descarga desde Drive la base que ya exista y reemplaza lo sincronizable de este equipo.
+              Descarga desde Drive la base existente y reemplaza lo sincronizable de este equipo.
             </p>
           </button>
         </div>
@@ -68,10 +68,10 @@ function SyncInProgressModal({ open }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[235] flex items-center justify-center bg-[rgba(10,24,40,0.42)] px-4">
-      <div className="w-full max-w-md rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+    <div className="fixed inset-0 z-[235] flex items-center justify-center bg-[var(--modal-scrim)] px-4">
+      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
-          <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
+          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)]" />
         </div>
         <p className="mt-5 font-headline text-2xl font-extrabold text-[var(--primary)]">Sincronizando con Drive</p>
         <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
@@ -98,11 +98,11 @@ function formatSyncResult(result) {
   const value = String(result || '').trim().toLowerCase()
   switch (value) {
     case '':
-      return 'Aun no se ha realizado ninguna sincronizacion.'
+      return 'Aún no se ha realizado ninguna sincronización.'
     case 'sin cambios':
-      return 'Todo esta al dia entre este equipo y Drive.'
+      return 'Todo está al día entre este equipo y Drive.'
     case 'ok':
-      return 'Sincronizacion completada correctamente. Drive y este equipo quedaron alineados.'
+      return 'Sincronización completada correctamente. Drive y este equipo quedaron alineados.'
     case 'ok (local -> drive)':
       return 'Se subieron los cambios locales a Drive.'
     case 'ok (drive -> local)':
@@ -131,7 +131,7 @@ function DriveSyncSettingsPage() {
     }
 
     if (!state.syncStatus.lastSyncAt) {
-      return 'Aun no se ha realizado ninguna sincronizacion.'
+      return 'Aún no se ha realizado ninguna sincronización.'
     }
 
     return formatSyncResult(state.syncStatus.lastSyncResult)
@@ -139,15 +139,15 @@ function DriveSyncSettingsPage() {
 
   const syncMeta = useMemo(() => {
     if (!state.syncStatus.lastSyncAt) {
-      return 'Sin historial de sincronizacion en este equipo.'
+      return 'Sin historial de sincronización en este equipo.'
     }
 
     const timestamp = new Date(state.syncStatus.lastSyncAt)
     if (Number.isNaN(timestamp.getTime())) {
-      return 'Ultima sincronizacion registrada recientemente.'
+      return 'Última sincronización registrada recientemente.'
     }
 
-    return `Ultima sincronizacion: ${timestamp.toLocaleString('es-MX', {
+    return `Última sincronización: ${timestamp.toLocaleString('es-MX', {
       dateStyle: 'medium',
       timeStyle: 'short',
     })}`
@@ -159,7 +159,7 @@ function DriveSyncSettingsPage() {
       await actions.connectGoogleDrive()
       sileo.success({
         title: 'Drive conectado',
-        description: 'La cuenta de Google quedo lista para sincronizar este equipo.',
+        description: 'La cuenta de Google quedó lista para sincronizar este equipo.',
       })
     } catch (error) {
       sileo.error({
@@ -177,12 +177,12 @@ function DriveSyncSettingsPage() {
       await actions.disconnectGoogleDrive()
       sileo.info({
         title: 'Drive desconectado',
-        description: 'La sincronizacion quedo desactivada en este equipo.',
+        description: 'La sincronización quedó desactivada en este equipo.',
       })
     } catch (error) {
       sileo.error({
         title: 'No se pudo desconectar Drive',
-        description: getErrorMessage(error, 'Intentalo de nuevo.'),
+        description: getErrorMessage(error, 'Inténtalo de nuevo.'),
       })
     } finally {
       setBusyAction('')
@@ -196,24 +196,24 @@ function DriveSyncSettingsPage() {
       const result = await actions.syncWorkspaceNow('manual', mode)
       if (result.detectedConflicts) {
         sileo.warning({
-          title: 'Sincronizacion con conflictos',
+          title: 'Sincronización con conflictos',
           description: `Se detectaron ${result.detectedConflicts} conflicto(s) para revisar.`,
         })
       } else {
         sileo.success({
-          title: 'Sincronizacion completada',
+          title: 'Sincronización completada',
           description:
             mode === 'push'
-              ? 'Drive quedo actualizado con la informacion local de este equipo.'
+              ? 'Drive quedó actualizado con la información local de este equipo.'
               : mode === 'pull'
-                ? 'La informacion de Drive se aplico correctamente en este equipo.'
+                ? 'La información de Drive se aplicó correctamente en este equipo.'
                 : 'Los respaldos con Drive se actualizaron correctamente.',
         })
       }
     } catch (error) {
       sileo.error({
         title: 'No se pudo sincronizar',
-        description: getErrorMessage(error, 'Intentalo de nuevo.'),
+        description: getErrorMessage(error, 'Inténtalo de nuevo.'),
       })
     } finally {
       setBusyAction('')
@@ -238,12 +238,12 @@ function DriveSyncSettingsPage() {
       })
       sileo.success({
         title: 'Conflicto resuelto',
-        description: `Se aplico la version ${resolution === 'local' ? 'local' : 'de Drive'}.`,
+        description: `Se aplicó la versión ${resolution === 'local' ? 'local' : 'de Drive'}.`,
       })
     } catch (error) {
       sileo.error({
         title: 'No se pudo resolver el conflicto',
-        description: getErrorMessage(error, 'Intentalo de nuevo.'),
+        description: getErrorMessage(error, 'Inténtalo de nuevo.'),
       })
     } finally {
       setBusyAction('')
@@ -262,13 +262,13 @@ function DriveSyncSettingsPage() {
           <PageHeader
             eyebrow="Ajustes"
             title="Drive"
-            description="Conecta Google Drive para respaldar cantos, secuencias y categorias con sincronizacion local-first."
+            description="Conecta Google Drive para respaldar cantos, secuencias y categorías con sincronización local-first."
           />
         </div>
 
         <section className="grid gap-4 md:grid-cols-3">
           <EditorialCard>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Conexion</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Conexión</p>
             <p className="mt-2 text-sm font-semibold text-[var(--primary)]">
               {isConnected
                 ? state.syncStatus.needsInitialSyncChoice
@@ -300,7 +300,7 @@ function DriveSyncSettingsPage() {
                 <Cloud size={20} />
               </div>
               <div>
-                <h2 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Sincronizacion</h2>
+                <h2 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Sincronización</h2>
                 <p className="mt-1 text-sm text-[var(--on-surface-variant)]">{syncSummary}</p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--outline)]">
                   {syncMeta}
@@ -310,13 +310,13 @@ function DriveSyncSettingsPage() {
 
             {!state.driveAuthStatus.configured ? (
               <div className="rounded-[20px] border border-[rgba(186,26,26,0.16)] bg-[rgba(186,26,26,0.06)] px-4 py-4 text-sm leading-6 text-[var(--on-surface)]">
-                Tauri no encontro `GOOGLE_DRIVE_CLIENT_ID` y `GOOGLE_DRIVE_CLIENT_SECRET` en la configuracion local de este equipo.
+                Tauri no encontró `GOOGLE_DRIVE_CLIENT_ID` y `GOOGLE_DRIVE_CLIENT_SECRET` en la configuración local de este equipo.
               </div>
             ) : null}
 
             {state.syncStatus.needsInitialSyncChoice ? (
               <div className="rounded-[20px] border border-[rgba(0,36,70,0.12)] bg-[var(--surface-container-low)] px-4 py-4 text-sm leading-6 text-[var(--on-surface)]">
-                Esta cuenta aun no tiene una direccion de sincronizacion para este equipo. La primera vez tendras que
+                Esta cuenta aún no tiene una dirección de sincronización para este equipo. La primera vez tendrás que
                 elegir si quieres subir lo local o descargar lo que ya exista en Drive.
               </div>
             ) : null}
@@ -331,19 +331,12 @@ function DriveSyncSettingsPage() {
                   Desconectar Drive
                 </Button>
               ) : (
-                <Button
-                  onClick={handleConnect}
-                  disabled={!state.driveAuthStatus.configured || busyAction === 'connect'}
-                >
+                <Button onClick={handleConnect} disabled={!state.driveAuthStatus.configured || busyAction === 'connect'}>
                   Conectar Drive
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                onClick={handleSyncNow}
-                disabled={!isConnected || busyAction === 'sync'}
-              >
+              <Button variant="outline" onClick={handleSyncNow} disabled={!isConnected || busyAction === 'sync'}>
                 <RefreshCcw size={16} />
                 Sincronizar ahora
               </Button>
@@ -358,7 +351,7 @@ function DriveSyncSettingsPage() {
               <div>
                 <h2 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Conflictos pendientes</h2>
                 <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
-                  Si el mismo dato cambia en dos equipos, aqui decides cual version conservar.
+                  Si el mismo dato cambia en dos equipos, aquí decides cuál versión conservar.
                 </p>
               </div>
             </div>

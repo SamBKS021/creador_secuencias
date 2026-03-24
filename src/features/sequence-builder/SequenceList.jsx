@@ -4,7 +4,11 @@ import SequenceItemCard from './SequenceItemCard.jsx'
 
 function SequenceList({ items, pageOffset = 0, totalItems = 0, songs, onDragEnd, onRemove, onMove }) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),

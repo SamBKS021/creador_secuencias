@@ -59,7 +59,7 @@ export function AppProvider({ children }) {
         const config = await service.getWorkspaceConfig()
         dispatch({ type: 'workspace:selected', payload: config })
 
-        updateStartup(24, 'Leyendo configuracion de este equipo...')
+        updateStartup(24, 'Leyendo configuración de este equipo...')
         const [authStatus, syncStatus] = await Promise.all([
           service.getDriveAuthStatus?.() || Promise.resolve(null),
           service.getSyncStatus?.() || Promise.resolve(null),
@@ -153,7 +153,7 @@ export function AppProvider({ children }) {
       } catch (error) {
         dispatch({
           type: 'bootstrap:error',
-          payload: error.message || 'No fue posible iniciar la aplicacion.',
+          payload: error.message || 'No fue posible iniciar la aplicación.',
         })
         updateStartup(100, 'No se pudo completar el inicio. Abriendo en modo local...')
         await wait(320)
@@ -223,6 +223,17 @@ export function AppProvider({ children }) {
     })()
   }, [state.startup.visible])
 
+  useEffect(() => {
+    const themeMode = state.preferences.themeMode || 'light'
+    document.documentElement.dataset.themeMode = themeMode
+    document.body.dataset.themeMode = themeMode
+
+    return () => {
+      delete document.documentElement.dataset.themeMode
+      delete document.body.dataset.themeMode
+    }
+  }, [state.preferences.themeMode])
+
   async function chooseWorkspace() {
     const result = await service.selectWorkspaceRoot()
     const config = await service.getWorkspaceConfig()
@@ -265,6 +276,12 @@ export function AppProvider({ children }) {
 
   async function saveMotionMode(motionMode) {
     const preferences = await service.saveMotionMode(motionMode)
+    dispatch({ type: 'preferences:set', payload: preferences })
+    return preferences
+  }
+
+  async function saveThemeMode(themeMode) {
+    const preferences = await service.saveThemeMode(themeMode)
     dispatch({ type: 'preferences:set', payload: preferences })
     return preferences
   }
@@ -522,6 +539,7 @@ export function AppProvider({ children }) {
       importSongDocxBatch,
       saveSongCategories,
       saveMotionMode,
+      saveThemeMode,
       refreshSyncStatus,
       checkForAppUpdate,
       dismissUpdate,

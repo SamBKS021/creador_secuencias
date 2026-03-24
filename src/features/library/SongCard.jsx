@@ -38,6 +38,7 @@ function SongCard({ song, selected, onSelect, onDelete }) {
           selected ? 'bg-[rgba(255,255,255,0.65)]' : 'bg-[var(--primary-fixed-dim)]',
         ].join(' ')}
       />
+
       <div className="ml-3 space-y-5">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-3">
@@ -49,9 +50,12 @@ function SongCard({ song, selected, onSelect, onDelete }) {
             >
               {song.category}
             </span>
+
             <div>
               <h3 className="font-headline text-3xl font-extrabold leading-tight">{song.title}</h3>
-              <p className={selected ? 'text-white/80' : 'text-[var(--on-surface-variant)]'}>{song.author || 'Autor pendiente'}</p>
+              <p className={selected ? 'text-white/80' : 'text-[var(--on-surface-variant)]'}>
+                {song.author || 'Autor sin registrar'}
+              </p>
             </div>
           </div>
 
@@ -61,7 +65,7 @@ function SongCard({ song, selected, onSelect, onDelete }) {
               aria-label={`Opciones de ${song.title}`}
               className={[
                 'rounded-full p-2 transition',
-                selected ? 'text-white/80 hover:bg-white/10' : 'text-slate-400 hover:bg-[rgba(0,36,70,0.06)]',
+                selected ? 'text-white/80 hover:bg-white/10' : 'text-[var(--outline)] hover:bg-[var(--hover-surface)]',
               ].join(' ')}
               onClick={(event) => {
                 event.preventDefault()
@@ -74,7 +78,7 @@ function SongCard({ song, selected, onSelect, onDelete }) {
 
             {menuOpen ? (
               <div
-                className="absolute right-0 top-11 z-20 min-w-[190px] rounded-2xl border border-[rgba(67,71,78,0.14)] bg-white p-2 text-[var(--on-surface)] shadow-[0_18px_36px_-20px_rgba(0,24,49,0.45)]"
+                className="absolute right-0 top-11 z-20 min-w-[190px] rounded-2xl border border-[var(--glass-border)] bg-[var(--surface-container-lowest)] p-2 text-[var(--on-surface)] shadow-[var(--card-shadow)]"
                 onClick={(event) => {
                   event.preventDefault()
                   event.stopPropagation()

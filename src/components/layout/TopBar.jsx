@@ -81,7 +81,7 @@ function TopBar() {
   }
 
   return (
-    <header className="shrink-0 border-b border-[rgba(0,36,70,0.08)] bg-white/95 px-4 py-3 backdrop-blur-sm lg:px-8">
+    <header className="shrink-0 border-b border-[rgba(67,71,78,0.12)] bg-[var(--topbar-bg)] px-4 py-3 backdrop-blur-sm lg:px-8">
       <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-6">
           <div
@@ -108,7 +108,7 @@ function TopBar() {
                     "font-headline text-sm font-semibold tracking-tight transition",
                     isActive
                       ? "text-[var(--primary)]"
-                      : "text-slate-500 hover:text-[var(--primary)]"
+                      : "text-[var(--on-surface-variant)] hover:text-[var(--primary)]"
                   ].join(" ")
                 }
               >
@@ -127,7 +127,10 @@ function TopBar() {
               className="text-[var(--primary)]"
             />
             {state.updateStatus.available ? (
-              <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[var(--error)] shadow-[0_0_0_4px_rgba(255,255,255,0.92)]" />
+              <span
+                className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[var(--error)]"
+                style={{ boxShadow: '0 0 0 4px var(--badge-ring)' }}
+              />
             ) : null}
           </div>
           <IconButton
@@ -136,16 +139,23 @@ function TopBar() {
             onClick={() => navigate("/ayuda")}
             className="text-[var(--primary)]"
           />
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(171,200,245,0.9)] bg-[var(--tertiary-fixed)] text-xs font-bold text-[var(--primary)]">
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full border text-xs font-bold shadow-[0_10px_24px_-18px_var(--shadow-color)]"
+            style={{
+              borderColor: 'var(--avatar-border)',
+              background: 'var(--avatar-bg)',
+              color: 'var(--avatar-text)',
+            }}
+          >
             CCP
           </div>
 
           {isDesktop ? (
-            <div className="ml-2 flex items-center rounded-full border border-[rgba(0,36,70,0.08)] bg-[var(--surface-container-low)] p-1">
+            <div className="ml-2 flex items-center rounded-full border border-[rgba(67,71,78,0.12)] bg-[var(--surface-container-low)] p-1">
               <button
                 type="button"
                 data-tauri-drag-region={false}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-[var(--surface-container-lowest)]"
                 aria-label="Minimizar"
                 onClick={handleMinimize}
               >
@@ -154,7 +164,7 @@ function TopBar() {
               <button
                 type="button"
                 data-tauri-drag-region={false}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--primary)] transition hover:bg-[var(--surface-container-lowest)]"
                 aria-label={isMaximized ? "Restaurar" : "Maximizar"}
                 onClick={handleToggleMaximize}
               >

@@ -31,6 +31,7 @@ pub fn run() {
             commands::get_song_categories,
             commands::save_song_categories,
             commands::save_motion_mode,
+            commands::save_theme_mode,
             commands::get_drive_auth_status,
             commands::connect_google_drive,
             commands::disconnect_google_drive,

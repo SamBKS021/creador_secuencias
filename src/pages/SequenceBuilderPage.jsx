@@ -28,7 +28,7 @@ function CompactPagination({ page, totalPages, onChange, label = 'Página' }) {
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)] disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onChange(page - 1)}
           disabled={page === 1}
         >
@@ -37,7 +37,7 @@ function CompactPagination({ page, totalPages, onChange, label = 'Página' }) {
         </button>
         <button
           type="button"
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)] disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onChange(page + 1)}
           disabled={page === totalPages}
         >
@@ -51,7 +51,7 @@ function CompactPagination({ page, totalPages, onChange, label = 'Página' }) {
 
 function SequenceBuilderPage() {
   const navigate = useNavigate()
-  const { state, activeSequence, filteredSongs, actions } = useAppContext()
+  const { state, activeSequence, actions } = useAppContext()
   const [sequence, setSequence] = useState(activeSequence)
   const [search, setSearch] = useState('')
   const [libraryPage, setLibraryPage] = useState(1)
@@ -97,14 +97,14 @@ function SequenceBuilderPage() {
 
   const filteredLibrary = useMemo(
     () =>
-      filteredSongs.filter((song) =>
+      state.songs.filter((song) =>
         [song.title, song.author, song.key]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
           .includes(search.toLowerCase()),
       ),
-    [filteredSongs, search],
+    [state.songs, search],
   )
 
   const libraryTotalPages = Math.max(1, Math.ceil(filteredLibrary.length / PAGE_SIZE))
@@ -112,7 +112,7 @@ function SequenceBuilderPage() {
 
   useEffect(() => {
     setLibraryPage(1)
-  }, [search, filteredSongs])
+  }, [search, state.songs])
 
   useEffect(() => {
     setLibraryPage((current) => Math.min(current, libraryTotalPages))
@@ -135,9 +135,9 @@ function SequenceBuilderPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="El constructor necesita una carpeta raíz activa"
-        description="Las secuencias se guardan en la carpeta seleccionada y las exportaciones DOCX se generan dentro de `exports/`."
-        action={<Button onClick={actions.chooseWorkspace}>Elegir carpeta de trabajo</Button>}
+        title="El constructor necesita almacenamiento local listo"
+        description="Primero prepara el espacio de trabajo administrado por la app para guardar secuencias y sus exportaciones."
+        action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
     )
   }
@@ -163,9 +163,7 @@ function SequenceBuilderPage() {
     actions.clearExportResult()
     setSequence((current) => ({
       ...current,
-      items: current.items
-        .filter((item) => item.id !== itemId)
-        .map((item, index) => ({ ...item, order: index + 1 })),
+      items: current.items.filter((item) => item.id !== itemId).map((item, index) => ({ ...item, order: index + 1 })),
     }))
   }
 
@@ -257,7 +255,7 @@ function SequenceBuilderPage() {
     } catch (error) {
       sileo.error({
         title: 'No se pudo eliminar la secuencia',
-        description: error?.message || 'Intenta de nuevo.',
+        description: error?.message || 'Repite la acción en unos segundos.',
       })
     }
   }
@@ -267,7 +265,7 @@ function SequenceBuilderPage() {
       <PageHeader
         eyebrow="Preparación del servicio"
         title="Constructor de secuencias"
-        description="Arma el orden del servicio, reordena canciones con drag-and-drop y exporta un DOCX listo para compartir o descargar."
+        description="Arma el orden del servicio, reordena cantos con drag and drop y exporta un DOCX listo para compartir."
         actions={
           <>
             <Button variant="outline" className="whitespace-nowrap" onClick={() => navigate('/secuencias')}>
@@ -293,23 +291,23 @@ function SequenceBuilderPage() {
       />
 
       <div className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
-        <EditorialCard className="space-y-5">
+        <EditorialCard className="min-w-0 space-y-5">
           <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Biblioteca disponible</h3>
           <input
             className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none"
-            placeholder="Buscar canciones, autores o tonalidades..."
+            placeholder="Buscar cantos, autores o tonalidades..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
 
           <div className="space-y-3">
-            {paginatedLibrary.map((song) => (
+            {paginatedLibrary.map((song, index) => (
               <button
                 key={song.id}
                 type="button"
                 onClick={() => addSong(song.id)}
                 className="motion-list-item flex w-full items-center justify-between rounded-2xl bg-[var(--surface-container-low)] px-4 py-4 text-left transition hover:bg-[var(--secondary-container)]"
-                style={{ '--motion-delay': `${Math.min(paginatedLibrary.indexOf(song) * 40, 200)}ms` }}
+                style={{ '--motion-delay': `${Math.min(index * 40, 200)}ms` }}
               >
                 <div>
                   <p className="font-headline text-lg font-bold text-[var(--primary)]">{song.title}</p>
@@ -323,20 +321,18 @@ function SequenceBuilderPage() {
           </div>
 
           {!paginatedLibrary.length ? (
-            <p className="text-sm text-[var(--on-surface-variant)]">No hay canciones que coincidan con la búsqueda actual.</p>
+            <p className="text-sm text-[var(--on-surface-variant)]">No hay cantos que coincidan con la búsqueda actual.</p>
           ) : null}
 
           <CompactPagination page={libraryPage} totalPages={libraryTotalPages} onChange={setLibraryPage} />
         </EditorialCard>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <EditorialCard className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">
-                    Título de la secuencia
-                  </span>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Título de la secuencia</span>
                   <input
                     className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none"
                     value={sequence.title}
@@ -348,9 +344,7 @@ function SequenceBuilderPage() {
                 </label>
 
                 <label className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">
-                    Fecha del servicio
-                  </span>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Fecha del servicio</span>
                   <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] px-4 py-3">
                     <CalendarDays size={16} className="text-[var(--outline)]" />
                     <input
@@ -385,17 +379,12 @@ function SequenceBuilderPage() {
                   onRemove={removeSong}
                   onMove={moveSong}
                 />
-                <CompactPagination
-                  page={sequencePage}
-                  totalPages={sequenceTotalPages}
-                  onChange={setSequencePage}
-                  label="Bloque"
-                />
+                <CompactPagination page={sequencePage} totalPages={sequenceTotalPages} onChange={setSequencePage} label="Bloque" />
               </div>
             ) : (
               <EmptyState
-                title="Aún no hay canciones en esta secuencia"
-                description="Agrega canciones desde la columna izquierda para construir el flujo del servicio."
+                title="Aún no hay cantos en esta secuencia"
+                description="Agrega cantos desde la columna izquierda para construir el flujo del servicio."
               />
             )}
           </EditorialCard>
@@ -407,9 +396,7 @@ function SequenceBuilderPage() {
             </EditorialCard>
             <EditorialCard>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--outline)]">Duración</p>
-              <p className="font-headline mt-3 text-3xl font-extrabold text-[var(--primary)]">
-                {sequenceMetrics.estimatedDuration}
-              </p>
+              <p className="font-headline mt-3 text-3xl font-extrabold text-[var(--primary)]">{sequenceMetrics.estimatedDuration}</p>
             </EditorialCard>
             <EditorialCard>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--outline)]">Tonalidades</p>
@@ -417,9 +404,7 @@ function SequenceBuilderPage() {
             </EditorialCard>
             <EditorialCard>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--outline)]">Autores</p>
-              <p className="font-headline mt-3 text-3xl font-extrabold text-[var(--primary)]">
-                {sequenceMetrics.uniqueAuthors}
-              </p>
+              <p className="font-headline mt-3 text-3xl font-extrabold text-[var(--primary)]">{sequenceMetrics.uniqueAuthors}</p>
             </EditorialCard>
           </div>
 

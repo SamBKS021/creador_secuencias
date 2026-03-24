@@ -30,15 +30,35 @@ fn updater_runtime_config() -> Option<(String, String)> {
 }
 
 fn split_release_notes(value: &str) -> Vec<String> {
-    value
+    const START_MARKER: &str = "<!-- app-notes:start -->";
+    const END_MARKER: &str = "<!-- app-notes:end -->";
+
+    let preferred_section = value
+        .split(START_MARKER)
+        .nth(1)
+        .and_then(|rest| rest.split(END_MARKER).next())
+        .unwrap_or(value);
+
+    let bullet_notes: Vec<String> = preferred_section
         .lines()
         .map(str::trim)
-        .filter(|line| !line.is_empty())
+        .filter(|line| line.starts_with("- ") || line.starts_with("* "))
         .map(|line| {
             line.trim_start_matches("- ")
                 .trim_start_matches("* ")
                 .to_string()
         })
+        .collect();
+
+    if !bullet_notes.is_empty() {
+        return bullet_notes;
+    }
+
+    preferred_section
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_string)
         .collect()
 }
 

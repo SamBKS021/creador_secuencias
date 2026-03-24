@@ -59,12 +59,12 @@ Shape recomendado:
 
 ## GitHub Actions
 
-El workflow `.github/workflows/release.yml` ya está preparado para:
+El workflow `.github/workflows/release.yml` está preparado para:
 
-- Windows
-- macOS
-- firma del updater
-- publicación en GitHub Releases
+- compilar el release en Windows
+- firmar el updater
+- publicar assets en GitHub Releases
+- usar el contenido de `docs/release-notes.md` como cuerpo del release
 
 Secrets necesarios:
 
@@ -72,6 +72,8 @@ Secrets necesarios:
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `APP_UPDATE_ENDPOINT`
 - `TAURI_UPDATER_PUBLIC_KEY`
+- `GOOGLE_DRIVE_CLIENT_ID`
+- `GOOGLE_DRIVE_CLIENT_SECRET`
 
 Para macOS además:
 
@@ -82,9 +84,32 @@ Para macOS además:
 - `APPLE_PASSWORD`
 - `APPLE_TEAM_ID`
 
+## Notas del release
+
+Antes de crear un tag nuevo, actualiza:
+
+- `docs/release-notes.md`
+
+Ese archivo se publica como:
+
+- descripción visible del release en GitHub
+- fuente principal de notas que verá la app en la pantalla de actualizaciones
+
+Si quieres que la app muestre una versión corta y más limpia de las novedades, edita el bloque entre:
+
+- `<!-- app-notes:start -->`
+- `<!-- app-notes:end -->`
+
+Mantén las notas:
+
+- en español
+- cortas y agrupadas por impacto
+- centradas en cambios reales visibles para el usuario
+
 ## Flujo recomendado
 
-1. Subir versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
-2. Crear tag `vX.Y.Z`.
-3. GitHub Actions compila, firma y publica el release.
-4. Actualizar el `update-manifest.json` en Drive si quieres mostrar aviso enriquecido.
+1. Actualizar versión en `package.json`, `src-tauri/Cargo.toml` y `src-tauri/tauri.conf.json`.
+2. Editar `docs/release-notes.md` con los cambios de esa versión.
+3. Crear tag `vX.Y.Z`.
+4. GitHub Actions compila, firma y publica el release.
+5. Actualizar `update-manifest.json` en Drive si quieres mostrar aviso enriquecido.

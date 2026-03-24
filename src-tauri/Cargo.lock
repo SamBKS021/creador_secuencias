@@ -482,7 +482,7 @@ dependencies = [
 
 [[package]]
 name = "creador_de_secuencias"
-version = "0.1.9"
+version = "0.1.11"
 dependencies = [
  "chrono",
  "docx-rs",

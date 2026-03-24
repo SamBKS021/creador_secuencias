@@ -12,7 +12,7 @@ const items = [
 
 function MobileNav() {
   return (
-    <nav className="glass-panel fixed inset-x-4 bottom-4 z-40 grid grid-cols-5 rounded-[24px] border border-white/60 p-2 shadow-[0_16px_30px_-18px_rgba(0,36,70,0.36)] lg:hidden">
+    <nav className="glass-panel fixed inset-x-4 bottom-4 z-40 grid grid-cols-5 rounded-[24px] border border-[var(--glass-border)] p-2 shadow-[0_16px_30px_-18px_rgba(0,36,70,0.36)] lg:hidden">
       {items.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}
@@ -20,7 +20,7 @@ function MobileNav() {
           className={({ isActive }) =>
             [
               'flex flex-col items-center gap-1 rounded-2xl px-2 py-3 text-xs font-semibold',
-              isActive ? 'bg-[var(--primary)] text-white' : 'text-slate-500',
+              isActive ? 'bg-[var(--primary)] text-white' : 'text-[var(--on-surface-variant)]',
             ].join(' ')
           }
         >

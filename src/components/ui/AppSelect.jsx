@@ -53,7 +53,7 @@ function AppSelect({
         className={[
           'flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition outline-none',
           tone === 'white'
-            ? 'bg-white text-[var(--primary)] shadow-[inset_0_0_0_1px_rgba(0,36,70,0.04)]'
+            ? 'bg-[var(--surface-container-lowest)] text-[var(--primary)] shadow-[inset_0_0_0_1px_rgba(0,36,70,0.04)]'
             : 'bg-[var(--surface-container-low)] text-[var(--on-surface)]',
           disabled ? 'cursor-not-allowed opacity-60' : 'hover:-translate-y-0.5',
           open ? 'ring-2 ring-[rgba(31,111,235,0.16)]' : '',
@@ -76,7 +76,7 @@ function AppSelect({
       </button>
 
       {open ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-30 overflow-hidden rounded-[20px] border border-[rgba(67,71,78,0.12)] bg-white shadow-[0_24px_44px_-26px_rgba(0,24,49,0.45)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-30 overflow-hidden rounded-[20px] border border-[rgba(67,71,78,0.12)] bg-[var(--surface-container-lowest)] shadow-[0_24px_44px_-26px_rgba(0,24,49,0.45)]">
           <div className="max-h-72 overflow-y-auto p-2">
             {normalizedOptions.map((option) => {
               const selected = option.value === value

@@ -50,14 +50,9 @@ function flattenImportBatch(result, defaultCategory) {
 function UploadPage() {
   const { state, actions } = useAppContext();
   const blendyRef = useRef(null);
-  const songCategories = useMemo(
-    () => getSongCategories(state.songCategories),
-    [state.songCategories]
-  );
-  const defaultCategory = songCategories[0] || "Contemporanea";
-  const [form, setForm] = useState(() =>
-    createEmptySong({ category: defaultCategory })
-  );
+  const songCategories = useMemo(() => getSongCategories(state.songCategories), [state.songCategories]);
+  const defaultCategory = songCategories[0] || "Contemporánea";
+  const [form, setForm] = useState(() => createEmptySong({ category: defaultCategory }));
   const [reviewState, setReviewState] = useState({
     open: false,
     items: [],
@@ -151,9 +146,7 @@ function UploadPage() {
     }
 
     setReviewState((current) => {
-      const nextItems = current.items.filter(
-        (_, index) => index !== current.currentIndex
-      );
+      const nextItems = current.items.filter((_, index) => index !== current.currentIndex);
       return {
         ...current,
         saving: false,
@@ -167,8 +160,7 @@ function UploadPage() {
     const loadingToastId = sileo.show({
       type: "loading",
       title: "Procesando archivos .docx",
-      description:
-        "Analizando titulos, secciones y coincidencias dentro de la biblioteca local.",
+      description: "Analizando títulos, secciones y coincidencias dentro de la biblioteca local.",
       duration: null
     });
 
@@ -179,28 +171,24 @@ function UploadPage() {
       const reviewItems = flattenImportBatch(batch, defaultCategory);
       if (!batch.documents?.length) {
         sileo.info({
-          title: "Importacion cancelada",
-          description: "No se selecciono ningun archivo para procesar."
+          title: "Importación cancelada",
+          description: "No se seleccionó ningún archivo para procesar."
         });
         return;
       }
 
       if (!reviewItems.length) {
-        const warningText = batch.documents
-          .flatMap((document) => document.warnings || [])
-          .join(" ");
+        const warningText = batch.documents.flatMap((document) => document.warnings || []).join(" ");
 
         sileo.warning({
           title: "No se detectaron cantos",
-          description:
-            warningText ||
-            "No se encontraron bloques validos para revision en los archivos seleccionados."
+          description: warningText || "No se encontraron bloques válidos para revisar en los archivos seleccionados."
         });
         return;
       }
 
       sileo.success({
-        title: "Importacion lista para revisar",
+        title: "Importación lista para revisar",
         description: `Se detectaron ${reviewItems.length} cantos en ${batch.documents.length} archivo(s).`
       });
 
@@ -209,9 +197,7 @@ function UploadPage() {
       sileo.dismiss(loadingToastId);
       sileo.error({
         title: "No se pudo importar el archivo",
-        description:
-          error?.message ||
-          "Solo se soportan archivos .docx validos en este flujo."
+        description: error?.message || "Solo se admiten archivos .docx válidos en este flujo."
       });
     }
   }
@@ -222,9 +208,7 @@ function UploadPage() {
     }
 
     const { form: reviewForm, initialForm, candidate } = currentReviewItem;
-    const editedLyrics =
-      normalizeMultiline(reviewForm.lyrics) !==
-      normalizeMultiline(initialForm.lyrics);
+    const editedLyrics = normalizeMultiline(reviewForm.lyrics) !== normalizeMultiline(initialForm.lyrics);
 
     setReviewState((current) => ({
       ...current,
@@ -239,7 +223,7 @@ function UploadPage() {
 
       sileo.success({
         title: "Canto guardado",
-        description: `${reviewForm.title || "El canto"} ya esta disponible en la biblioteca.`
+        description: `${reviewForm.title || "El canto"} ya está disponible en la biblioteca.`
       });
 
       consumeCurrentReviewItem();
@@ -251,8 +235,7 @@ function UploadPage() {
 
       sileo.error({
         title: "No se pudo guardar el canto",
-        description:
-          error?.message || "Revisa los datos del canto e intentalo de nuevo."
+        description: error?.message || "Revisa los datos del canto e inténtalo de nuevo."
       });
     }
   }
@@ -262,23 +245,18 @@ function UploadPage() {
       return;
     }
 
-    const existingSong = state.songs.find(
-      (song) => song.id === currentReviewItem.candidate.matchedSongId
-    );
+    const existingSong = state.songs.find((song) => song.id === currentReviewItem.candidate.matchedSongId);
 
     if (!existingSong) {
       sileo.error({
-        title: "No se encontro el canto existente",
-        description:
-          "La coincidencia detectada ya no esta disponible en la biblioteca actual."
+        title: "No se encontró el canto existente",
+        description: "La coincidencia detectada ya no está disponible en la biblioteca actual."
       });
       return;
     }
 
     const { form: reviewForm, initialForm, candidate } = currentReviewItem;
-    const editedLyrics =
-      normalizeMultiline(reviewForm.lyrics) !==
-      normalizeMultiline(initialForm.lyrics);
+    const editedLyrics = normalizeMultiline(reviewForm.lyrics) !== normalizeMultiline(initialForm.lyrics);
 
     setReviewState((current) => ({
       ...current,
@@ -296,7 +274,7 @@ function UploadPage() {
 
       sileo.success({
         title: "Canto sobreescrito",
-        description: `${reviewForm.title || existingSong.title} se actualizo en la biblioteca.`
+        description: `${reviewForm.title || existingSong.title} se actualizó en la biblioteca.`
       });
 
       consumeCurrentReviewItem();
@@ -308,9 +286,7 @@ function UploadPage() {
 
       sileo.error({
         title: "No se pudo sobreescribir el canto",
-        description:
-          error?.message ||
-          "No fue posible actualizar el canto existente. Intentalo de nuevo."
+        description: error?.message || "No fue posible actualizar el canto existente. Inténtalo de nuevo."
       });
     }
   }
@@ -321,8 +297,8 @@ function UploadPage() {
     }
 
     sileo.info({
-      title: "Se usara el canto existente",
-      description: `${currentReviewItem.candidate.matchedSongTitle} se conservara y este canto saldra de la revision sin crear duplicados.`
+      title: "Se usará el canto existente",
+      description: `${currentReviewItem.candidate.matchedSongTitle} se conservará y este canto saldrá de la revisión sin crear duplicados.`
     });
 
     consumeCurrentReviewItem();
@@ -335,7 +311,7 @@ function UploadPage() {
 
     sileo.info({
       title: "Canto omitido",
-      description: `${currentReviewItem.form.title || "El canto detectado"} quedo fuera de esta importacion.`
+      description: `${currentReviewItem.form.title || "El canto detectado"} quedó fuera de esta importación.`
     });
 
     consumeCurrentReviewItem();
@@ -344,13 +320,9 @@ function UploadPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="Configura tu raiz antes de importar canciones"
-        description="La app guarda la biblioteca principal dentro de la carpeta de trabajo elegida y deja en AppData solo configuracion y preferencias."
-        action={
-          <Button onClick={actions.chooseWorkspace}>
-            Elegir carpeta de trabajo
-          </Button>
-        }
+        title="Prepara el almacenamiento antes de importar canciones"
+        description="La app necesita inicializar su espacio de trabajo local para guardar biblioteca, secuencias y exportaciones."
+        action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
     );
   }
@@ -360,38 +332,30 @@ function UploadPage() {
       <div className="space-y-8">
         <PageHeader
           title="Centro de carga"
-          description="Carga archivos .docx para detectar varios cantos, revisar coincidencias por titulo y confirmar cada alta de forma individual."
+          description="Importa archivos .docx para detectar varios cantos, revisar coincidencias por título y confirmar cada alta de forma individual."
         />
 
-        <UploadDropzone
-          onBrowse={handleImportBatch}
-          blendySourceId={BLENDY_ID}
-          disabled={reviewState.saving}
-        />
+        <UploadDropzone onBrowse={handleImportBatch} blendySourceId={BLENDY_ID} disabled={reviewState.saving} />
 
         <div className="grid gap-6 xl:grid-cols-[0.55fr_1fr]">
           <EditorialCard className="space-y-4">
-            <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
-              Modo Manual
-            </h3>
+            <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Modo manual</h3>
             <p className="text-sm leading-7 text-[var(--on-surface-variant)]">
-              Crea un canto manualmente llenando su titulo, autor, tono, tempo
-              y letra desde esta pantalla.
+              Crea un canto manualmente llenando su título, autor, tono, tempo y letra desde esta pantalla.
             </p>
             <p className="text-sm leading-7 text-[var(--on-surface-variant)]">
-              Si prefieres importar varias canciones desde un documento Word,
-              usa la carga `.docx`: la app detecta los cantos y te permite
-              revisarlos antes de guardarlos.
+              Si prefieres importar varias canciones desde un documento Word, usa la carga `.docx`: la app detecta
+              los cantos y te permite revisarlos antes de guardarlos.
             </p>
           </EditorialCard>
 
-        <DraftEditor
-          title="Nuevo canto"
-          subtitle="Completa los datos del canto y su letra para agregarlo manualmente a tu biblioteca."
-          value={form}
-          categories={songCategories}
-          onChange={setForm}
-          onSubmit={async () => {
+          <DraftEditor
+            title="Nuevo canto"
+            subtitle="Completa los datos del canto y su letra para agregarlo manualmente a tu biblioteca."
+            value={form}
+            categories={songCategories}
+            onChange={setForm}
+            onSubmit={async () => {
               await actions.saveSong(form);
               setForm(createEmptySong({ category: defaultCategory }));
             }}
@@ -417,10 +381,7 @@ function UploadPage() {
         onNext={() =>
           setReviewState((current) => ({
             ...current,
-            currentIndex: Math.min(
-              current.currentIndex + 1,
-              current.items.length - 1
-            )
+            currentIndex: Math.min(current.currentIndex + 1, current.items.length - 1)
           }))
         }
         onSkip={handleSkip}

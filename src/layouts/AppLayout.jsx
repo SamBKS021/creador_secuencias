@@ -15,8 +15,8 @@ function ShutdownSyncModal({ open }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-[rgba(10,24,40,0.34)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
         </div>
@@ -52,8 +52,8 @@ function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onI
   }
 
   return (
-    <div className="fixed inset-0 z-[245] flex items-center justify-center bg-[rgba(10,24,40,0.34)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-2xl rounded-[28px] bg-white px-6 py-7 shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+    <div className="fixed inset-0 z-[245] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
+      <div className="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 shadow-[var(--modal-shadow)]">
         <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
           Actualización disponible
         </p>
@@ -109,8 +109,8 @@ function UpdateInstallingModal({ open, progress }) {
   const percent = Math.max(0, Math.min(100, Math.round(progress?.percent || 0)))
 
   return (
-    <div className="fixed inset-0 z-[246] flex items-center justify-center bg-[rgba(10,24,40,0.34)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-[28px] bg-white px-6 py-7 text-center shadow-[0_30px_80px_-30px_rgba(0,36,70,0.45)]">
+    <div className="fixed inset-0 z-[246] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
         </div>
@@ -290,13 +290,14 @@ function AppLayout() {
       <div
         className={state.startup.visible ? 'hidden' : 'page-shell flex h-screen flex-col overflow-hidden'}
         data-motion-mode={state.preferences.motionMode || 'normal'}
+        data-theme-mode={state.preferences.themeMode || 'light'}
         aria-hidden={state.startup.visible}
       >
         <TopBar />
         <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 items-stretch">
           <SideNav />
           <main className="min-w-0 flex-1 overflow-hidden">
-            <div className="app-scroll h-full overflow-y-auto px-4 pb-28 pt-8 lg:px-8 lg:pb-10">
+            <div className="app-scroll h-full overflow-x-hidden overflow-y-auto px-4 pb-28 pt-8 lg:px-8 lg:pb-10">
               {state.error ? (
                 <div className="mb-5 rounded-2xl bg-[rgba(186,26,26,0.08)] px-4 py-3 text-sm text-[var(--error)]">
                   {state.error}

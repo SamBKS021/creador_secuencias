@@ -44,7 +44,7 @@ function UpdatesPage() {
       if (result?.available) {
         sileo.info({
           title: 'Actualización disponible',
-          description: `${result.latestVersion} está lista para instalar.`,
+          description: `${result.latestVersion} ya está lista para instalar.`,
         })
       } else {
         sileo.success({
@@ -55,7 +55,7 @@ function UpdatesPage() {
     } catch (error) {
       sileo.error({
         title: 'No se pudo revisar actualizaciones',
-        description: error?.message || 'Inténtalo de nuevo.',
+        description: error?.message || 'Inténtalo de nuevo en unos segundos.',
       })
     }
   }
@@ -66,7 +66,7 @@ function UpdatesPage() {
     } catch (error) {
       sileo.error({
         title: 'No se pudo instalar la actualización',
-        description: error?.message || 'Inténtalo de nuevo.',
+        description: error?.message || 'Inténtalo de nuevo en unos segundos.',
       })
     }
   }
@@ -117,7 +117,7 @@ function UpdatesPage() {
         <EditorialCard>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Última disponible</p>
           <p className="mt-2 font-headline text-4xl font-extrabold text-[var(--primary)]">
-            {state.updateStatus.latestVersion || 'Sin novedades'}
+            {state.updateStatus.latestVersion || 'Sin actualizaciones pendientes'}
           </p>
         </EditorialCard>
         <EditorialCard>

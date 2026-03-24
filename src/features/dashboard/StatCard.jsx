@@ -2,7 +2,7 @@ import EditorialCard from '../../components/ui/EditorialCard.jsx'
 
 function StatCard({ label, value, accent = 'light', icon: Icon }) {
   const tones = {
-    light: 'bg-white text-[var(--primary)]',
+    light: 'bg-[var(--surface-container-lowest)] text-[var(--primary)]',
     primary: 'cta-gradient text-white',
     secondary: 'bg-[var(--secondary-container)] text-[var(--primary)]',
   }

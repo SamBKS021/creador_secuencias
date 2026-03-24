@@ -4,11 +4,11 @@ import AppSelect from '../../components/ui/AppSelect.jsx'
 function FilterBar({ filters, categories, onChange }) {
   return (
     <div className="grid gap-4 rounded-[28px] bg-[var(--surface-container-low)] p-5 lg:grid-cols-[2.2fr_1fr_1fr_1fr]">
-      <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+      <label className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-lowest)] px-4 py-3">
         <Search size={16} className="text-[var(--outline)]" />
         <input
           className="w-full bg-transparent outline-none"
-          placeholder="Buscar titulos, autores o letra..."
+          placeholder="Buscar títulos, autores o fragmentos de letra..."
           value={filters.search}
           onChange={(event) => onChange({ search: event.target.value })}
         />
@@ -23,7 +23,7 @@ function FilterBar({ filters, categories, onChange }) {
 
       <AppSelect
         tone="white"
-        options={['Cualquiera', 'Lento', 'Medio', 'Rapido']}
+        options={['Cualquiera', 'Lento', 'Medio', 'Rápido']}
         value={filters.tempo}
         onChange={(nextValue) => onChange({ tempo: nextValue })}
       />
@@ -31,9 +31,9 @@ function FilterBar({ filters, categories, onChange }) {
       <AppSelect
         tone="white"
         options={[
-          { value: 'date-desc', label: 'Mas recientes' },
-          { value: 'alpha', label: 'Alfabetico' },
-          { value: 'plays', label: 'Mas usadas' },
+          { value: 'date-desc', label: 'Más recientes' },
+          { value: 'alpha', label: 'Alfabético' },
+          { value: 'plays', label: 'Más usadas' },
           { value: 'key', label: 'Tonalidad' },
         ]}
         value={filters.sortBy}

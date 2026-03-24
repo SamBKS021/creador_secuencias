@@ -150,6 +150,7 @@ function readConfig() {
       preferences: {
         compactSidebar: false,
         motionMode: 'normal',
+        themeMode: 'light',
       },
     }
   }
@@ -166,6 +167,7 @@ function readConfig() {
     preferences: {
       compactSidebar: false,
       motionMode: 'normal',
+      themeMode: 'light',
       ...(parsed.preferences || {}),
     },
   }
@@ -235,6 +237,22 @@ export async function saveMotionMode(motionMode) {
   const preferences = {
     ...config.preferences,
     motionMode: normalized,
+  }
+
+  writeConfig({
+    ...config,
+    preferences,
+  })
+
+  return preferences
+}
+
+export async function saveThemeMode(themeMode) {
+  const config = readConfig()
+  const normalized = ['light', 'dark', 'retro'].includes(themeMode) ? themeMode : 'light'
+  const preferences = {
+    ...config.preferences,
+    themeMode: normalized,
   }
 
   writeConfig({
@@ -393,7 +411,7 @@ export async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
   const lastSyncAt = localStorage.getItem(`${DATA_KEY}-last-sync-at`) || ''
   if (auth.connected && auth.connectedAccountEmail && !lastSyncAt && mode === 'merge') {
     throw new Error(
-      'Esta cuenta aun no tiene direccion inicial de sincronizacion. Elige si quieres subir lo local o bajar lo que ya existe en Drive.',
+      'Esta cuenta aún no tiene dirección inicial de sincronización. Elige si quieres subir lo local o bajar lo que ya existe en Drive.',
     )
   }
 

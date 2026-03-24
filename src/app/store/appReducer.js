@@ -13,7 +13,7 @@ export const initialState = {
   startup: {
     visible: true,
     progress: 6,
-    detail: 'Preparando aplicacion...',
+    detail: 'Preparando aplicación...',
   },
   workspaceRoot: '',
   recentRoots: [],
@@ -22,6 +22,7 @@ export const initialState = {
     locale: 'es-MX',
     compactSidebar: false,
     motionMode: 'normal',
+    themeMode: 'light',
   },
   driveAuthStatus: {
     configured: false,

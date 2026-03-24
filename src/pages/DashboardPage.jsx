@@ -15,13 +15,9 @@ function DashboardPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="Define una carpeta raiz para comenzar"
-        description="Selecciona una carpeta pensada para sincronizarse con Google Drive. La biblioteca, secuencias, borradores y exportaciones viviran alli."
-        action={
-          <Button onClick={actions.chooseWorkspace}>
-            Elegir carpeta de trabajo
-          </Button>
-        }
+        title="Prepara el almacenamiento local para comenzar"
+        description="La app necesita inicializar su espacio de trabajo local para guardar biblioteca, secuencias, borradores y exportaciones."
+        action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
     );
   }
@@ -29,29 +25,19 @@ function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Panorama Actual"
-        description="Tu biblioteca esta sincronizada y lista para el proximo servicio. Usa esta vista para revisar repertorio reciente, secuencias proximas y accesos rapidos."
+        title="Panorama actual"
+        description="Consulta repertorio reciente, próximas secuencias y accesos rápidos desde un solo lugar."
       />
 
       <section className="grid gap-4 md:grid-cols-2">
-        <StatCard
-          label="Canciones totales"
-          value={state.stats.totalSongs}
-          icon={FileStack}
-        />
-        <StatCard
-          label="Secuencias"
-          value={state.stats.totalSequences}
-          icon={CalendarDays}
-        />
+        <StatCard label="Canciones totales" value={state.stats.totalSongs} icon={FileStack} />
+        <StatCard label="Secuencias" value={state.stats.totalSequences} icon={CalendarDays} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-headline text-3xl font-extrabold text-[var(--primary)]">
-              Repertorio reciente
-            </h2>
+            <h2 className="font-headline text-3xl font-extrabold text-[var(--primary)]">Repertorio reciente</h2>
             <Button variant="ghost" onClick={() => navigate("/biblioteca")}>
               Ver biblioteca
             </Button>
@@ -59,21 +45,15 @@ function DashboardPage() {
 
           <div className="space-y-4">
             {state.stats.recentUploads.map((song) => (
-              <EditorialCard
-                key={song.id}
-                className="flex items-center justify-between gap-4"
-              >
+              <EditorialCard key={song.id} className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--surface-container-low)] text-[var(--primary)]">
                     <FileStack size={20} />
                   </div>
                   <div>
-                    <h3 className="font-headline text-2xl font-bold text-[var(--primary)]">
-                      {song.title}
-                    </h3>
+                    <h3 className="font-headline text-2xl font-bold text-[var(--primary)]">{song.title}</h3>
                     <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
-                      {song.key} · {song.tempo} BPM · actualizado{" "}
-                      {formatRelativeDate(song.updatedAt)}
+                      {song.key} · {song.tempo} BPM · actualizado {formatRelativeDate(song.updatedAt)}
                     </p>
                   </div>
                 </div>
@@ -87,16 +67,11 @@ function DashboardPage() {
 
         <div className="space-y-6">
           <EditorialCard>
-            <h2 className="font-headline text-3xl font-extrabold text-[var(--primary)]">
-              Proximas secuencias
-            </h2>
+            <h2 className="font-headline text-3xl font-extrabold text-[var(--primary)]">Próximas secuencias</h2>
             <div className="mt-5 space-y-4">
               {state.stats.upcomingSequences.length ? (
                 state.stats.upcomingSequences.map((sequence) => (
-                  <div
-                    key={sequence.id}
-                    className="rounded-2xl bg-[var(--surface-container-low)] p-4"
-                  >
+                  <div key={sequence.id} className="rounded-2xl bg-[var(--surface-container-low)] p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[rgba(201,154,95,1)]">
                       {formatDisplayDate(sequence.serviceDate)}
                     </p>
@@ -110,22 +85,18 @@ function DashboardPage() {
                 ))
               ) : (
                 <div className="rounded-2xl bg-[var(--surface-container-low)] p-4 text-sm text-[var(--on-surface-variant)]">
-                  No hay secuencias programadas para hoy o fechas futuras.
+                  No hay secuencias programadas para hoy ni para fechas futuras.
                 </div>
               )}
             </div>
-            <Button
-              className="mt-6 w-full"
-              variant="outline"
-              onClick={() => navigate("/secuencias")}
-            >
+            <Button className="mt-6 w-full" variant="outline" onClick={() => navigate("/secuencias")}>
               Ver secuencias
             </Button>
           </EditorialCard>
 
           <EditorialCard className="space-y-4">
             <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
-              Carga reciente
+              Archivos recientes
             </p>
             {state.stats.recentUploads.slice(0, 2).map((song) => (
               <div
@@ -133,9 +104,7 @@ function DashboardPage() {
                 className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] p-4"
               >
                 <Upload size={16} className="text-[var(--primary)]" />
-                <span className="text-sm text-[var(--on-surface-variant)]">
-                  {song.sourceFileName}
-                </span>
+                <span className="text-sm text-[var(--on-surface-variant)]">{song.sourceFileName}</span>
               </div>
             ))}
           </EditorialCard>

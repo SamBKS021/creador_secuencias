@@ -75,6 +75,21 @@ pub fn save_motion_mode(app: AppHandle, motion_mode: String) -> Result<Preferenc
 }
 
 #[tauri::command]
+pub fn save_theme_mode(app: AppHandle, theme_mode: String) -> Result<Preferences, String> {
+    let normalized = match theme_mode.trim().to_lowercase().as_str() {
+        "dark" => "dark",
+        "retro" => "retro",
+        _ => "light",
+    }
+    .to_string();
+
+    let mut config = ensure_managed_workspace_config(&app).map_err(|error| error.to_string())?;
+    config.preferences.theme_mode = normalized;
+    save_config(&app, &config).map_err(|error| error.to_string())?;
+    Ok(config.preferences)
+}
+
+#[tauri::command]
 pub fn select_workspace_root(app: AppHandle) -> Result<WorkspaceSelection, String> {
     let config = ensure_managed_workspace_config(&app).map_err(|error| error.to_string())?;
 

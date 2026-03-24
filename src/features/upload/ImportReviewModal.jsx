@@ -1,26 +1,45 @@
-import { AlertTriangle, ArrowLeft, ArrowRight, FileText, Link2, Pencil, Save, SkipForward, Sparkles, X } from 'lucide-react'
-import Button from '../../components/ui/Button.jsx'
-import DraftEditor from './DraftEditor.jsx'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  FileText,
+  Link2,
+  Pencil,
+  Save,
+  SkipForward,
+  Sparkles,
+  X,
+} from "lucide-react";
+import Button from "../../components/ui/Button.jsx";
+import DraftEditor from "./DraftEditor.jsx";
 
 function WarningBlock({ reviewItem }) {
-  const hasMatch = Boolean(reviewItem?.candidate?.matchedSongId)
+  const hasMatch = Boolean(reviewItem?.candidate?.matchedSongId);
   const warnings = (reviewItem?.candidate?.warnings || []).filter(
-    (warning) => warning !== 'Ya existe un canto con este título. Guardar como nuevo sigue permitido.',
-  )
+    (warning) => warning !== "Ya existe un canto con este título. Guardar como nuevo sigue permitido.",
+  );
 
   if (!hasMatch && !warnings.length) {
-    return null
+    return null;
   }
 
   return (
-    <div className="rounded-[24px] border border-[rgba(171,111,0,0.18)] bg-[rgba(255,243,213,0.95)] px-5 py-4 text-sm text-[var(--on-surface)]">
+    <div
+      className="rounded-[24px] border px-5 py-4 text-sm"
+      style={{
+        borderColor: "var(--warning-border)",
+        background: "var(--warning-surface)",
+        color: "var(--warning-text)",
+      }}
+    >
       <div className="flex items-start gap-3">
-        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-[rgb(171,111,0)]" />
+        <AlertTriangle size={18} className="mt-0.5 shrink-0" style={{ color: "var(--warning-icon)" }} />
         <div className="space-y-2">
           {hasMatch ? (
             <p>
-              Encontramos un canto con este titulo en tu biblioteca: <strong>{reviewItem.candidate.matchedSongTitle}</strong>.
-              Puedes usar el que ya existe, sobreescribirlo con esta version o guardar uno nuevo aparte.
+              Encontramos un canto con este título en tu biblioteca:{" "}
+              <strong>{reviewItem.candidate.matchedSongTitle}</strong>. Puedes usar el existente, sobrescribirlo con esta
+              versión o guardar uno nuevo aparte.
             </p>
           ) : null}
           {warnings.map((warning) => (
@@ -29,7 +48,7 @@ function WarningBlock({ reviewItem }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ImportReviewModal({
@@ -49,16 +68,16 @@ function ImportReviewModal({
   categories,
 }) {
   if (!open || !reviewItem) {
-    return null
+    return null;
   }
 
-  const { candidate, form } = reviewItem
+  const { candidate, form } = reviewItem;
 
   return (
     <div className="fixed inset-0 z-[80] overflow-hidden p-4 sm:p-6">
       <button
         type="button"
-        aria-label="Cerrar revision"
+        aria-label="Cerrar revisión"
         className="absolute inset-0 bg-[rgba(7,20,32,0.52)] backdrop-blur-sm"
         onClick={onClose}
       />
@@ -68,12 +87,14 @@ function ImportReviewModal({
           <div className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[34px] bg-[var(--surface)] p-4 shadow-[0_32px_80px_-36px_rgba(0,24,49,0.6)] sm:max-h-[calc(100vh-3rem)] sm:p-6">
             <div className="mb-4 flex shrink-0 flex-col gap-4 rounded-[28px] bg-[var(--surface-container-high)] px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--primary)]">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-container-lowest)] px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--primary)]">
                   <Sparkles size={14} />
-                  Revision guiada
+                  Revisión guiada
                 </div>
                 <div>
-                  <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">{form.title || 'Sin titulo'}</h3>
+                  <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
+                    {form.title || "Sin título"}
+                  </h3>
                   <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
                     Canto {currentIndex + 1} de {totalItems}
                   </p>
@@ -113,8 +134,8 @@ function ImportReviewModal({
                   </div>
                   <p className="mt-2 leading-6">
                     {candidate.matchedSongId
-                      ? `Se detecto un canto existente: ${candidate.matchedSongTitle}.`
-                      : 'No se encontro una coincidencia exacta por titulo en la biblioteca actual.'}
+                      ? `Se detectó un canto existente: ${candidate.matchedSongTitle}.`
+                      : "No se encontró una coincidencia exacta por título en la biblioteca actual."}
                   </p>
                 </div>
               </div>
@@ -125,12 +146,12 @@ function ImportReviewModal({
 
               <DraftEditor
                 title="Revisar canto detectado"
-                subtitle="Ajusta titulo, autor, tonalidad y letra antes de decidir si lo guardas como nuevo o usas una coincidencia existente."
+                subtitle="Ajusta título, autor, tonalidad y letra antes de decidir si lo guardas como nuevo o si aprovechas una coincidencia existente."
                 value={form}
                 categories={categories}
                 onChange={onChange}
                 onSubmit={onSaveNew}
-                submitLabel={saving ? 'Guardando...' : candidate.matchedSongId ? 'Guardar como nuevo' : 'Guardar'}
+                submitLabel={saving ? "Guardando..." : candidate.matchedSongId ? "Guardar como nuevo" : "Guardar"}
                 submitDisabled={saving}
                 hideSubmitButton
               />
@@ -138,8 +159,8 @@ function ImportReviewModal({
               <div className="mt-4 flex flex-col gap-3 rounded-[20px] bg-[var(--surface-container-high)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs leading-5 text-[var(--on-surface-variant)] sm:max-w-[52%]">
                   {candidate.matchedSongId
-                    ? 'Usar existente saca este canto de la revision sin crear duplicados.'
-                    : 'Guarda este canto o omitelo si no quieres importarlo.'}
+                    ? "Usar el existente saca este canto de la revisión sin crear duplicados."
+                    : "Guarda este canto o descártalo si no quieres importarlo."}
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:min-w-[340px] sm:max-w-[340px]">
                   {candidate.matchedSongId ? (
@@ -161,32 +182,30 @@ function ImportReviewModal({
                           disabled={saving}
                         >
                           <Pencil size={13} />
-                          Sobreescribir
+                          Sobrescribir
                         </Button>
                       </div>
                       <Button className="rounded-lg px-3 py-2 text-xs whitespace-nowrap" onClick={onSaveNew} disabled={saving}>
                         <Save size={14} />
-                        {saving ? 'Guardando...' : 'Guardar como nuevo'}
+                        {saving ? "Guardando..." : "Guardar como nuevo"}
                       </Button>
                     </>
                   ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          className="min-w-0 flex-1 rounded-lg px-3 py-2 text-xs whitespace-nowrap"
-                          onClick={onSkip}
-                          disabled={saving}
-                        >
-                          <SkipForward size={13} />
-                          Omitir
-                        </Button>
-                        <Button className="min-w-0 flex-1 rounded-lg px-3 py-2 text-xs whitespace-nowrap" onClick={onSaveNew} disabled={saving}>
-                          <Save size={13} />
-                          {saving ? 'Guardando...' : 'Guardar'}
-                        </Button>
-                      </div>
-                    </>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        className="min-w-0 flex-1 rounded-lg px-3 py-2 text-xs whitespace-nowrap"
+                        onClick={onSkip}
+                        disabled={saving}
+                      >
+                        <SkipForward size={13} />
+                        Omitir
+                      </Button>
+                      <Button className="min-w-0 flex-1 rounded-lg px-3 py-2 text-xs whitespace-nowrap" onClick={onSaveNew} disabled={saving}>
+                        <Save size={13} />
+                        {saving ? "Guardando..." : "Guardar"}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -195,7 +214,7 @@ function ImportReviewModal({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default ImportReviewModal
+export default ImportReviewModal;

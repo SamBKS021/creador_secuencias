@@ -20,7 +20,7 @@ import { formatDisplayDate, formatRelativeDate } from "../utils/formatters.js";
 
 const PAGE_SIZE = 4;
 
-function CompactPagination({ page, totalPages, onChange, label = "Pagina" }) {
+function CompactPagination({ page, totalPages, onChange, label = "Página" }) {
   if (totalPages <= 1) {
     return null;
   }
@@ -34,7 +34,7 @@ function CompactPagination({ page, totalPages, onChange, label = "Pagina" }) {
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)] disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onChange(page - 1)}
           disabled={page === 1}
         >
@@ -43,7 +43,7 @@ function CompactPagination({ page, totalPages, onChange, label = "Pagina" }) {
         </button>
         <button
           type="button"
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl px-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)] disabled:cursor-not-allowed disabled:opacity-45"
           onClick={() => onChange(page + 1)}
           disabled={page === totalPages}
         >
@@ -74,10 +74,7 @@ function SequencesPage() {
     [search, state.sequences]
   );
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredSequences.length / PAGE_SIZE)
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredSequences.length / PAGE_SIZE));
 
   useEffect(() => {
     setPage(1);
@@ -97,11 +94,7 @@ function SequencesPage() {
           return;
         }
 
-        setExportStatuses(
-          Object.fromEntries(
-            statuses.map((status) => [status.sequenceId, status])
-          )
-        );
+        setExportStatuses(Object.fromEntries(statuses.map((status) => [status.sequenceId, status])));
       } catch {
         if (!cancelled) {
           setExportStatuses({});
@@ -137,9 +130,7 @@ function SequencesPage() {
     } catch (error) {
       sileo.error({
         title: "No se pudo abrir el documento",
-        description:
-          error?.message ||
-          "Todavia no existe un DOCX exportado para esta secuencia."
+        description: error?.message || "Todavía no existe un DOCX exportado para esta secuencia."
       });
     }
   }
@@ -147,13 +138,9 @@ function SequencesPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="Las secuencias necesitan una carpeta raiz activa"
-        description="Selecciona primero una carpeta de trabajo para administrar secuencias, exportaciones y biblioteca local."
-        action={
-          <Button onClick={actions.chooseWorkspace}>
-            Elegir carpeta de trabajo
-          </Button>
-        }
+        title="Las secuencias necesitan almacenamiento local listo"
+        description="Primero prepara el espacio de trabajo administrado por la app para guardar secuencias, biblioteca y exportaciones."
+        action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
     );
   }
@@ -161,7 +148,7 @@ function SequencesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Planeacion del servicio"
+        eyebrow="Planeación del servicio"
         title="Biblioteca de secuencias"
         description="Revisa secuencias guardadas, abre una para editarla o crea una nueva desde cero."
         actions={
@@ -179,14 +166,13 @@ function SequencesPage() {
               Secuencias disponibles
             </h2>
             <p className="text-sm text-[var(--on-surface-variant)]">
-              {filteredSequences.length} secuencia(s) visibles en la biblioteca
-              actual.
+              {filteredSequences.length} secuencia(s) visibles en la biblioteca actual.
             </p>
           </div>
 
           <input
             className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none lg:max-w-md"
-            placeholder="Buscar por titulo o fecha del servicio..."
+            placeholder="Buscar por título o fecha del servicio..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -208,7 +194,7 @@ function SequencesPage() {
                         {formatDisplayDate(sequence.serviceDate)}
                       </p>
                       <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
-                        {sequence.title || "Secuencia sin titulo"}
+                        {sequence.title || "Secuencia sin título"}
                       </h3>
                     </div>
 
@@ -217,14 +203,14 @@ function SequencesPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenDocument(sequence.id)}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(67,71,78,0.16)] bg-white text-[var(--primary)] transition hover:border-[var(--primary)]"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(67,71,78,0.16)] bg-[var(--surface-container-lowest)] text-[var(--primary)] transition hover:border-[var(--primary)]"
                           aria-label="Abrir documento Word"
                           title="Abrir documento Word"
                         >
                           <FaFileWord size={18} />
                         </button>
                       ) : null}
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[var(--primary)]">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-container-lowest)] text-[var(--primary)]">
                         <CalendarDays size={20} />
                       </div>
                     </div>
@@ -232,25 +218,17 @@ function SequencesPage() {
 
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">
-                        Canciones
-                      </p>
-                      <p className="mt-2 text-lg font-bold text-[var(--primary)]">
-                        {sequence.items.length}
-                      </p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">Canciones</p>
+                      <p className="mt-2 text-lg font-bold text-[var(--primary)]">{sequence.items.length}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">
-                        Servicio
-                      </p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">Servicio</p>
                       <p className="mt-2 text-sm font-semibold text-[var(--on-surface)]">
                         {formatDisplayDate(sequence.serviceDate)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">
-                        Actualizada
-                      </p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--outline)]">Actualizada</p>
                       <p className="mt-2 text-sm font-semibold text-[var(--on-surface)]">
                         {formatRelativeDate(sequence.updatedAt)}
                       </p>
@@ -260,14 +238,9 @@ function SequencesPage() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm text-[var(--on-surface-variant)]">
                       <FileText size={16} />
-                      {exportStatus?.exists
-                        ? "Lista para editar, exportar y abrir"
-                        : "Lista para editar y exportar"}
+                      {exportStatus?.exists ? "Lista para editar, exportar y abrir" : "Lista para editar y exportar"}
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleEditSequence(sequence.id)}
-                    >
+                    <Button variant="outline" onClick={() => handleEditSequence(sequence.id)}>
                       <PencilLine size={16} />
                       Editar
                     </Button>
@@ -278,25 +251,17 @@ function SequencesPage() {
           </div>
         ) : (
           <EmptyState
-            title={
-              state.sequences.length
-                ? "No hay resultados para esta busqueda"
-                : "Aun no hay secuencias guardadas"
-            }
+            title={state.sequences.length ? "No hay resultados para esta búsqueda" : "Aún no hay secuencias guardadas"}
             description={
               state.sequences.length
-                ? "Prueba con otro titulo o una fecha distinta."
+                ? "Prueba con otro título o una fecha distinta."
                 : "Crea tu primera secuencia para empezar a planear y exportar servicios."
             }
             action={<Button onClick={handleCreateNew}>Crear secuencia</Button>}
           />
         )}
 
-        <CompactPagination
-          page={page}
-          totalPages={totalPages}
-          onChange={setPage}
-        />
+        <CompactPagination page={page} totalPages={totalPages} onChange={setPage} />
       </EditorialCard>
     </div>
   );

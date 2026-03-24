@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct Preferences {
     pub compact_sidebar: bool,
     pub motion_mode: String,
+    pub theme_mode: String,
 }
 
 impl Default for Preferences {
@@ -13,6 +14,7 @@ impl Default for Preferences {
         Self {
             compact_sidebar: false,
             motion_mode: "normal".into(),
+            theme_mode: "light".into(),
         }
     }
 }

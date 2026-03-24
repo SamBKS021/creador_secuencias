@@ -8,113 +8,193 @@ import {
   Search,
   Settings,
   Sparkles,
-} from 'lucide-react'
-import EditorialCard from '../components/ui/EditorialCard.jsx'
-import PageHeader from '../components/ui/PageHeader.jsx'
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import EditorialCard from "../components/ui/EditorialCard.jsx";
+import PageHeader from "../components/ui/PageHeader.jsx";
 
 const sections = [
   {
-    id: 'vision-general',
-    label: 'Vision general',
+    id: "vision-general",
+    label: "Vision general",
     icon: BookOpen,
-    intro: 'Una vista rapida para entender el flujo de trabajo completo dentro de la aplicacion.',
-    points: [
-      'La app trabaja primero en local. Tu carpeta activa guarda cantos, secuencias, categorias y exportaciones.',
-      'Google Drive sirve como respaldo y sincronizacion, no como almacenamiento principal de trabajo.',
-      'Los documentos DOCX se usan para importar o exportar, pero internamente la app guarda los datos de forma estructurada.',
+    eyebrow: "Panorama",
+    title: "Como esta pensada la aplicacion",
+    summary:
+      "Centro Musical trabaja con un enfoque local-first: tu equipo guarda los datos principales y Google Drive actua como respaldo y sincronizacion.",
+    highlights: [
+      "Los cantos, secuencias y categorias viven en archivos estructurados dentro del almacenamiento administrado por la app.",
+      "Los archivos DOCX se usan para importar o exportar, pero no son la base interna del sistema.",
+      "La app puede seguir funcionando aunque Drive no este disponible en ese momento.",
+    ],
+    tips: [
+      "Usa Drive como respaldo entre equipos, no como carpeta de trabajo diario.",
+      "Si vas a mover repertorio entre computadoras, sincroniza antes de cerrar y al volver a abrir.",
+      "Mantener el trabajo diario dentro de la app evita perder cambios por archivos sueltos.",
     ],
   },
   {
-    id: 'inicio',
-    label: 'Inicio',
+    id: "inicio",
+    label: "Inicio",
     icon: LayoutDashboard,
-    intro: 'El tablero principal resume el estado de tu biblioteca y lo que viene para el siguiente servicio.',
-    points: [
-      'Muestra accesos rapidos a las areas principales de la app.',
-      'Destaca secuencias proximas segun la fecha del servicio.',
-      'Te ayuda a revisar de un vistazo si ya tienes repertorio y secuencias listas.',
+    eyebrow: "Vista principal",
+    title: "Panorama del servicio y del repertorio",
+    summary:
+      "La pantalla de inicio te da una lectura rapida del estado actual de la biblioteca y de las secuencias proximas.",
+    highlights: [
+      "Resume cuantos cantos y secuencias tienes disponibles.",
+      "Muestra accesos rapidos a las secciones que mas se usan en el flujo diario.",
+      "Ayuda a detectar si ya tienes preparado el siguiente servicio.",
+    ],
+    tips: [
+      "Usala como punto de entrada al abrir la app por primera vez en el dia.",
+      "Si una secuencia proxima no aparece, revisa la fecha del servicio.",
+      "Desde aqui puedes saltar rapido a Biblioteca o Secuencias sin recorrer todo el menu.",
     ],
   },
   {
-    id: 'biblioteca',
-    label: 'Biblioteca de canciones',
+    id: "biblioteca",
+    label: "Biblioteca de canciones",
     icon: Library,
-    intro: 'Aqui se consultan y editan los cantos que ya forman parte de tu repertorio.',
-    points: [
-      'Puedes buscar por titulo, autor, letra o categoria.',
-      'Cada tarjeta permite abrir un canto para revisarlo y editar sus datos.',
-      'Los cambios solo se guardan cuando presionas Guardar cambios.',
+    eyebrow: "Repertorio",
+    title: "Consulta y edicion de cantos guardados",
+    summary:
+      "Biblioteca es la vista para revisar repertorio existente, ajustar metadatos y corregir letra, tono o tempo.",
+    highlights: [
+      "Permite buscar por titulo, autor, tonalidad y otros datos del canto.",
+      "Los filtros de esta vista son independientes del constructor de secuencias.",
+      "Cada cancion puede abrirse para editarse sin volver a importarla.",
+    ],
+    tips: [
+      "Usa los filtros para mantenimiento rapido del repertorio, no para construir secuencias.",
+      "Guarda cambios solo cuando confirmes que el canto quedo correcto.",
+      "Si necesitas dar de alta un canto nuevo, hazlo desde Centro de carga.",
     ],
   },
   {
-    id: 'carga',
-    label: 'Centro de carga',
+    id: "carga",
+    label: "Centro de carga",
     icon: CloudUpload,
-    intro: 'Es la entrada oficial para dar de alta nuevos cantos.',
-    points: [
-      'Modo manual: crea un canto nuevo llenando titulo, autor, tonalidad, tempo, categoria y letra.',
-      'Importacion DOCX: detecta varios cantos, permite revisarlos y decidir si se guardan, se omiten o actualizan uno existente.',
-      'Desde aqui se evita duplicar cantos y se centraliza toda alta nueva.',
+    eyebrow: "Altas nuevas",
+    title: "Ingreso manual o por importacion DOCX",
+    summary:
+      "Centro de carga concentra la entrada de nuevos cantos y el flujo de revision para evitar duplicados o errores al importar.",
+    highlights: [
+      "Puedes crear un canto manualmente con titulo, autor, categoria, tonalidad, tempo y letra.",
+      "La importacion DOCX detecta bloques y te deja revisar cada canto antes de guardarlo.",
+      "Cuando encuentra coincidencias, te permite usar el existente, sobrescribirlo o guardar uno aparte.",
+    ],
+    tips: [
+      "Si importas varios documentos, revisa cada canto con calma antes de confirmar.",
+      "Aprovecha las coincidencias detectadas para no llenar la biblioteca de duplicados.",
+      "Si una categoria no existe, creala primero desde Ajustes.",
     ],
   },
   {
-    id: 'secuencias',
-    label: 'Secuencias',
+    id: "secuencias",
+    label: "Secuencias",
     icon: ListMusic,
-    intro: 'Las secuencias sirven para preparar el orden del servicio y luego exportarlo a Word.',
-    points: [
-      'La biblioteca de secuencias te deja abrir, editar y revisar las ya creadas.',
-      'Dentro del constructor puedes agregar cantos, reordenarlos, cambiar titulo y fecha.',
-      'La exportacion genera un documento DOCX compacto listo para escritorio o impresion.',
+    eyebrow: "Orden del servicio",
+    title: "Preparacion, reordenamiento y exportacion",
+    summary:
+      "Aqui construyes el flujo del servicio agregando cantos, reordenandolos y preparando el documento final para compartir.",
+    highlights: [
+      "La columna izquierda usa la biblioteca completa y su propia busqueda local.",
+      "Puedes arrastrar cantos dentro de la secuencia para cambiar el orden libremente.",
+      "La exportacion genera un DOCX compacto listo para escritorio o impresion.",
+    ],
+    tips: [
+      "Guarda la secuencia antes de exportar para no perder cambios recientes.",
+      "Si trabajas en varios equipos, sincroniza antes de abrir una secuencia importante.",
+      "Revisa titulo y fecha del servicio antes de compartir el documento final.",
     ],
   },
   {
-    id: 'carpeta',
-    label: 'Carpeta de trabajo',
+    id: "almacenamiento",
+    label: "Almacenamiento local",
     icon: FolderOpen,
-    intro: 'La app usa un almacenamiento administrado automaticamente para guardar tu biblioteca y tus secuencias.',
-    points: [
-      'No necesitas elegir manualmente una ruta para empezar a trabajar.',
-      'La aplicacion crea y mantiene su propia estructura interna para cantos, secuencias, categorias y exportaciones.',
-      'Esto ayuda a reducir errores por mover o borrar carpetas importantes accidentalmente.',
+    eyebrow: "Base local",
+    title: "Como guarda la app su informacion",
+    summary:
+      "La aplicacion administra su propio espacio de trabajo para reducir errores por mover o borrar carpetas manualmente.",
+    highlights: [
+      "No necesitas elegir una ruta para empezar a trabajar.",
+      "La estructura interna separa biblioteca, secuencias, categorias, borradores y exportaciones.",
+      "Esto hace mas estable el respaldo y la sincronizacion entre equipos.",
+    ],
+    tips: [
+      "Evita modificar a mano los archivos internos si no es necesario.",
+      "Haz respaldo de la app a traves de Drive, no copiando carpetas al azar.",
+      "Si cambias de equipo, usa sincronizacion y no solo copiar documentos exportados.",
     ],
   },
   {
-    id: 'busqueda',
-    label: 'Busqueda y navegacion',
+    id: "busqueda",
+    label: "Busqueda y navegacion",
     icon: Search,
-    intro: 'La barra superior y los menus laterales te permiten moverte y ubicar rapidamente lo importante.',
-    points: [
-      'La barra superior muestra accesos directos a las vistas principales y a las actualizaciones disponibles.',
-      'El signo de interrogacion abre esta guia de uso.',
-      'Los menus laterales muestran las secciones principales y las opciones de ajustes.',
+    eyebrow: "Movimiento rapido",
+    title: "Donde estan los accesos importantes",
+    summary:
+      "La barra superior, los menus laterales y esta guia estan pensados para ayudarte a llegar rapido a cada modulo.",
+    highlights: [
+      "La barra superior mantiene accesos directos a las vistas principales.",
+      "El icono de ayuda abre esta documentacion integrada.",
+      "La sidebar concentra la navegacion principal y los accesos a Ajustes y Soporte.",
+    ],
+    tips: [
+      "Usa Inicio como pivote y la sidebar para saltar entre modulos sin perder contexto.",
+      "Si ves una campana activa, revisa Actualizaciones antes de seguir trabajando.",
+      "Esta guia esta pensada para leerse por bloques, no como lista larga.",
     ],
   },
   {
-    id: 'ajustes',
-    label: 'Ajustes',
+    id: "ajustes",
+    label: "Ajustes",
     icon: Settings,
-    intro: 'Ajustes concentra modulos de configuracion para la aplicacion.',
-    points: [
-      'Categorias: administra el catalogo usado en filtros y formularios.',
-      'Drive: conecta Google Drive y controla la sincronizacion.',
-      'Animaciones: regula el movimiento visual segun el rendimiento de cada equipo.',
+    eyebrow: "Configuracion",
+    title: "Modulos de personalizacion y mantenimiento",
+    summary:
+      "Ajustes agrupa los catalogos y preferencias locales del equipo para adaptar la app sin tocar los datos principales del repertorio.",
+    highlights: [
+      "Categorias administra el catalogo usado en formularios y filtros.",
+      "Drive controla la conexion, el estado y la sincronizacion entre equipos.",
+      "Animaciones y temas ajustan la experiencia visual segun cada computadora.",
+    ],
+    tips: [
+      "Los temas y animaciones son locales por equipo, no se sincronizan.",
+      "Si cambias una categoria en uso, la app actualiza los cantos asociados.",
+      "Revisa Ajustes cuando agregues un nuevo equipo al flujo de trabajo.",
     ],
   },
   {
-    id: 'drive',
-    label: 'Sincronizacion con Drive',
+    id: "drive",
+    label: "Sincronizacion con Drive",
     icon: Sparkles,
-    intro: 'Drive respalda cantos, secuencias y categorias para mantener tus equipos alineados.',
-    points: [
-      'La sincronizacion ocurre al iniciar y al cerrar la app cuando hay una cuenta conectada.',
-      'Tambien puedes forzarla manualmente desde Ajustes > Drive.',
-      'Las preferencias visuales del equipo, como las animaciones, no se sincronizan.',
+    eyebrow: "Respaldo entre equipos",
+    title: "Como mantener varios equipos alineados",
+    summary:
+      "Drive respalda cantos, secuencias y categorias para que puedas continuar el trabajo en otra computadora con la misma cuenta.",
+    highlights: [
+      "La app sincroniza al iniciar y al cerrar cuando hay una cuenta conectada.",
+      "Tambien puedes forzar una sincronizacion manual desde Ajustes > Drive.",
+      "Si hay conflicto entre equipos, la app te pide decidir que version conservar.",
+    ],
+    tips: [
+      "Antes de cambiar de equipo, sincroniza manualmente para evitar dudas.",
+      "Si es la primera vez con una cuenta, elige si deseas subir lo local o traer lo que ya existe en Drive.",
+      "Las categorias tambien forman parte del respaldo, junto con cantos y secuencias.",
     ],
   },
-]
+];
 
 function HelpPage() {
+  const [selectedId, setSelectedId] = useState(sections[0].id);
+
+  const activeSection = useMemo(
+    () => sections.find((section) => section.id === selectedId) || sections[0],
+    [selectedId],
+  );
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -123,71 +203,107 @@ function HelpPage() {
         description="Consulta que hace cada seccion de la aplicacion y como aprovechar el flujo completo de cantos, secuencias y sincronizacion."
       />
 
-      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <EditorialCard className="h-fit xl:sticky xl:top-28">
-          <div className="space-y-4">
-            <div>
+      <div className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
+        <div className="self-start xl:sticky xl:top-6">
+          <EditorialCard className="overflow-hidden xl:max-h-[calc(100vh-9rem)]">
+            <div className="space-y-4">
+              <div>
+                <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
+                  Navegacion interna
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
+                  Elige un tema y el panel de la derecha actualizara su contenido al instante.
+                </p>
+              </div>
+
+              <nav className="sidebar-scroll max-h-[calc(100vh-17rem)] space-y-2 overflow-y-auto pr-2">
+                {sections.map(({ id, label, icon: Icon }) => {
+                  const active = id === selectedId;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSelectedId(id)}
+                      className={[
+                        "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition",
+                        active
+                          ? "bg-[var(--surface-container-low)] text-[var(--primary)] shadow-[var(--card-shadow)]"
+                          : "text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-low)] hover:text-[var(--primary)]",
+                      ].join(" ")}
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--surface-container-lowest)] text-[var(--primary)]">
+                        <Icon size={16} />
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </EditorialCard>
+        </div>
+
+        <EditorialCard
+          key={activeSection.id}
+          className="motion-help-panel space-y-6 overflow-hidden xl:min-h-[calc(100vh-9rem)]"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] bg-[var(--surface-container-low)] text-[var(--primary)]">
+              <activeSection.icon size={24} />
+            </div>
+            <div className="space-y-2">
               <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
-                Navegacion interna
+                {activeSection.eyebrow}
               </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
-                Selecciona una seccion para ir directo al tema que quieres consultar.
-              </p>
+              <h2 className="font-headline text-4xl font-extrabold tracking-tight text-[var(--primary)]">
+                {activeSection.title}
+              </h2>
+              <p className="max-w-4xl text-base leading-8 text-[var(--on-surface-variant)]">{activeSection.summary}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div>
+                <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
+                  Que puedes hacer aqui
+                </p>
+              </div>
+              <div className="space-y-3">
+                {activeSection.highlights.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-[22px] bg-[var(--surface-container-low)] px-5 py-4 text-sm leading-7 text-[var(--on-surface-variant)]"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <nav className="space-y-2">
-              {sections.map(({ id, label, icon: Icon }) => (
-                <a
-                  key={id}
-                  href={`#${id}`}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--surface-container-low)]"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--surface-container-low)] text-[var(--primary)]">
-                    <Icon size={16} />
-                  </span>
-                  <span>{label}</span>
-                </a>
-              ))}
-            </nav>
+            <div className="space-y-4">
+              <div>
+                <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
+                  Consejos rapidos
+                </p>
+              </div>
+              <div className="space-y-3">
+                {activeSection.tips.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-[22px] border border-[rgba(67,71,78,0.08)] bg-[var(--surface-container-lowest)] px-5 py-4 text-sm leading-7 text-[var(--on-surface-variant)]"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </EditorialCard>
-
-        <div className="space-y-5">
-          {sections.map(({ id, label, icon: Icon, intro, points }) => (
-            <EditorialCard key={id} className="scroll-mt-28 space-y-4" >
-              <section id={id} className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-container-low)] text-[var(--primary)]">
-                    <Icon size={20} />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
-                      {label}
-                    </p>
-                    <h2 className="font-headline text-3xl font-extrabold tracking-tight text-[var(--primary)]">
-                      {label}
-                    </h2>
-                    <p className="max-w-4xl text-sm leading-7 text-[var(--on-surface-variant)]">{intro}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 pl-16">
-                  {points.map((point) => (
-                    <div
-                      key={point}
-                      className="rounded-[20px] bg-[var(--surface-container-low)] px-4 py-4 text-sm leading-7 text-[var(--on-surface-variant)]"
-                    >
-                      {point}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </EditorialCard>
-          ))}
-        </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default HelpPage
+export default HelpPage;
