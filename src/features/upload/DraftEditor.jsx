@@ -11,6 +11,7 @@ function DraftEditor({
   submitDisabled = false,
   hideSubmitButton = false,
   categories = [],
+  sideContent = null,
   onChange,
   onSubmit,
 }) {
@@ -25,8 +26,9 @@ function DraftEditor({
 
   return (
     <EditorialCard className="h-full">
-      <div className="space-y-6">
-        <div>
+      <div className={sideContent ? 'grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(430px,0.72fr)]' : ''}>
+        <div className="space-y-6">
+          <div>
           <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">{title}</h3>
           <p className="mt-2 text-sm text-[var(--on-surface-variant)]">{subtitle}</p>
         </div>
@@ -100,6 +102,9 @@ function DraftEditor({
             </Button>
           </div>
         ) : null}
+        </div>
+
+        {sideContent ? <div className="min-w-0">{sideContent}</div> : null}
       </div>
     </EditorialCard>
   )

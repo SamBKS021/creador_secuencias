@@ -1,3 +1,4 @@
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -121,6 +122,9 @@ pub fn upsert_song(paths: &WorkspacePaths, payload: &SongPayload) -> AppResult<S
         if song.play_count == 0 {
             song.play_count = existing.play_count;
         }
+        if song.fechas_uso.is_empty() {
+            song.fechas_uso = existing.fechas_uso.clone();
+        }
     } else if song.created_at.is_empty() {
         song.created_at = timestamp.clone();
     }
@@ -166,7 +170,6 @@ pub fn delete_song(paths: &WorkspacePaths, song_id: &str) -> AppResult<()> {
 
 pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<SequenceMutationResult> {
     migrate_legacy_workspace_files(paths)?;
-    let songs = load_songs(paths)?;
     let mut sequences = load_sequences(paths)?;
     let timestamp = now_iso();
 
@@ -204,9 +207,12 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
     }
 
     persist_sequence_file(paths, &sequence)?;
+    recalcular_fechas_uso_de_cantos(paths, &sequences)?;
+    let songs = load_songs(paths)?;
 
     Ok(SequenceMutationResult {
         sequence,
+        songs: songs.clone(),
         stats: compute_stats(&songs, &sequences),
     })
 }
@@ -228,6 +234,7 @@ pub fn delete_sequence(paths: &WorkspacePaths, sequence_id: &str) -> AppResult<(
         }
     }
 
+    recalcular_fechas_uso_de_cantos(paths, &sequences)?;
     Ok(())
 }
 
@@ -336,6 +343,7 @@ fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&Song
         source_path: song.source_path.clone(),
         status: song.status.clone(),
         play_count: song.play_count,
+        fechas_uso: song.fechas_uso.clone(),
         created_at: song.created_at.clone(),
         updated_at: song.updated_at.clone(),
     };
@@ -379,8 +387,71 @@ fn build_song_from_records(meta: SongMetaRecord, content: SongContentRecord) -> 
         source_path: meta.source_path,
         status: meta.status,
         play_count: meta.play_count,
+        fechas_uso: meta.fechas_uso,
         created_at: meta.created_at,
         updated_at: meta.updated_at,
+    }
+}
+
+fn recalcular_fechas_uso_de_cantos(paths: &WorkspacePaths, sequences: &[Sequence]) -> AppResult<()> {
+    let mut fechas_por_canto = HashMap::<String, Vec<String>>::new();
+
+    for sequence in sequences {
+        let Some(fecha_servicio) = normalizar_fecha_de_servicio(&sequence.service_date) else {
+            continue;
+        };
+
+        let mut cantos_en_secuencia = HashSet::<String>::new();
+        for item in &sequence.items {
+            if item.song_id.trim().is_empty() || !cantos_en_secuencia.insert(item.song_id.clone()) {
+                continue;
+            }
+
+            fechas_por_canto
+                .entry(item.song_id.clone())
+                .or_default()
+                .push(fecha_servicio.clone());
+        }
+    }
+
+    for entry in fs::read_dir(&paths.library_dir)? {
+        let song_dir = entry?.path();
+        if !song_dir.is_dir() {
+            continue;
+        }
+
+        let meta_path = song_dir.join("meta.json");
+        if !meta_path.exists() {
+            continue;
+        }
+
+        let mut meta: SongMetaRecord = read_json(&meta_path)?;
+        meta.fechas_uso = fechas_por_canto.remove(&meta.id).unwrap_or_default();
+        meta.fechas_uso.sort();
+        write_json(&meta_path, &meta)?;
+    }
+
+    Ok(())
+}
+
+fn normalizar_fecha_de_servicio(value: &str) -> Option<String> {
+    let fecha = value.trim().get(0..10)?;
+    let mut partes = fecha.split('-');
+    let year = partes.next()?;
+    let month = partes.next()?;
+    let day = partes.next()?;
+
+    if partes.next().is_none()
+        && year.len() == 4
+        && month.len() == 2
+        && day.len() == 2
+        && year.chars().all(|item| item.is_ascii_digit())
+        && month.chars().all(|item| item.is_ascii_digit())
+        && day.chars().all(|item| item.is_ascii_digit())
+    {
+        Some(fecha.to_string())
+    } else {
+        None
     }
 }
 

@@ -60,6 +60,7 @@ pub struct Song {
     pub source_path: String,
     pub status: String,
     pub play_count: i32,
+    pub fechas_uso: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -80,6 +81,7 @@ pub struct SongMetaRecord {
     pub source_path: String,
     pub status: String,
     pub play_count: i32,
+    pub fechas_uso: Vec<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -372,6 +374,7 @@ pub struct SongMutationResult {
 #[serde(rename_all = "camelCase")]
 pub struct SequenceMutationResult {
     pub sequence: Sequence,
+    pub songs: Vec<Song>,
     pub stats: Stats,
 }
 

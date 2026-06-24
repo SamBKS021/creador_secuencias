@@ -188,6 +188,7 @@ pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
                     source_path: path.to_string_lossy().to_string(),
                     status: "draft".into(),
                     play_count: 0,
+                    fechas_uso: Vec::new(),
                     created_at: created_at.clone(),
                     updated_at: created_at.clone(),
                 },

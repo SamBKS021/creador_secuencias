@@ -295,6 +295,32 @@ button {
   height: 0;
 }
 
+.sidebar-submenu {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition:
+    max-height var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity var(--motion-duration-fast) ease-out,
+    transform var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-submenu[data-open='true'] {
+  max-height: 180px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.page-shell[data-motion-mode='reduced'] .sidebar-submenu {
+  transform: none;
+  transition:
+    max-height 140ms ease-out,
+    opacity 120ms ease-out;
+}
+
 :root[data-theme-mode='dark'] [class~='bg-white'],
 :root[data-theme-mode='retro'] [class~='bg-white'] {
   background-color: var(--surface-container-lowest) !important;
@@ -369,6 +395,15 @@ button {
   transform-origin: center top;
 }
 
+:root[data-motion-mode='normal'] .app-modal-overlay {
+  animation: modal-scrim-enter var(--motion-duration-fast) ease-out;
+}
+
+:root[data-motion-mode='normal'] .app-modal-panel {
+  animation: modal-panel-enter var(--motion-duration-base) cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+}
+
 .page-shell[data-motion-mode='reduced'] .motion-page {
   animation: page-enter-reduced 180ms ease-out;
 }
@@ -380,9 +415,19 @@ button {
   animation-fill-mode: both;
 }
 
+:root[data-motion-mode='reduced'] .app-modal-overlay,
+:root[data-motion-mode='reduced'] .app-modal-panel {
+  animation: fade-only 140ms ease-out;
+  animation-fill-mode: both;
+}
+
 .page-shell[data-motion-mode='off'] *,
 .page-shell[data-motion-mode='off'] *::before,
-.page-shell[data-motion-mode='off'] *::after {
+.page-shell[data-motion-mode='off'] *::after,
+:root[data-motion-mode='off'] .app-modal-overlay,
+:root[data-motion-mode='off'] .app-modal-overlay *,
+:root[data-motion-mode='off'] .app-modal-overlay *::before,
+:root[data-motion-mode='off'] .app-modal-overlay *::after {
   animation: none !important;
   transition: none !important;
   scroll-behavior: auto !important;
@@ -447,6 +492,26 @@ button {
   to {
     opacity: 1;
     transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes modal-scrim-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 

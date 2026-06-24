@@ -1,17 +1,19 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { sileo } from 'sileo'
 import { useAppContext } from '../app/store/AppContext.jsx'
 import Button from '../components/ui/Button.jsx'
 import EditorialCard from '../components/ui/EditorialCard.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
+import ModalShell from '../components/ui/ModalShell.jsx'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import FilterBar from '../features/library/FilterBar.jsx'
 import SongCard from '../features/library/SongCard.jsx'
+import SongUsageChart from '../features/library/SongUsageChart.jsx'
 import DraftEditor from '../features/upload/DraftEditor.jsx'
 import { getSongCategories } from '../utils/workspace.js'
 
-const SONGS_PER_PAGE = 6
+const SONGS_PER_PAGE = 9
 
 function buildEditableSnapshot(song) {
   return JSON.stringify({
@@ -66,10 +68,63 @@ function Pagination({ page, totalPages, onChange }) {
   )
 }
 
+function SongEditModal({ open, form, categories, hasPendingChanges, onChange, onSubmit, onClose }) {
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose, open])
+
+  if (!open || !form.id) {
+    return null
+  }
+
+  return (
+    <ModalShell
+      className="overflow-y-auto py-6"
+      panelClassName="relative w-full max-w-[min(1720px,calc(100vw-32px))]"
+      onClose={onClose}
+    >
+      <button
+        type="button"
+        aria-label="Cerrar editor"
+        className="absolute right-4 top-4 z-10 rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--primary)]"
+        onClick={onClose}
+      >
+        <X size={20} />
+      </button>
+
+      <DraftEditor
+        title="Editar canto"
+        subtitle="Actualiza metadatos, letra y tono del canto seleccionado."
+        value={form}
+        categories={categories}
+        onChange={onChange}
+        onSubmit={onSubmit}
+        submitLabel="Guardar cambios"
+        submitDisabled={!hasPendingChanges}
+        sideContent={<SongUsageChart fechasUso={form.fechasUso} />}
+      />
+    </ModalShell>
+  )
+}
+
 function LibraryPage() {
   const { state, filteredSongs, activeSong, actions } = useAppContext()
   const [form, setForm] = useState(activeSong)
   const [page, setPage] = useState(1)
+  const [editorOpen, setEditorOpen] = useState(false)
 
   useLayoutEffect(() => {
     setForm({
@@ -103,6 +158,31 @@ function LibraryPage() {
     return buildEditableSnapshot(form) !== buildEditableSnapshot(activeSong)
   }, [activeSong, form])
 
+  function abrirEditorDeCanto(song) {
+    actions.setActiveSong(song.id)
+    setForm({
+      ...song,
+      chords: '',
+    })
+    setEditorOpen(true)
+  }
+
+  function cerrarEditorDeCanto() {
+    setEditorOpen(false)
+  }
+
+  async function guardarCambiosDeCanto() {
+    if (!hasPendingChanges) {
+      return
+    }
+
+    await actions.updateSong(form)
+    sileo.success({
+      title: 'Canto actualizado',
+      description: `${form.title || 'El canto'} quedó actualizado en la biblioteca.`,
+    })
+  }
+
   if (!state.workspaceRoot) {
     return (
       <EmptyState
@@ -116,21 +196,22 @@ function LibraryPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Biblioteca de canciones"
+        title="Biblioteca de cantos"
         description="Edita repertorio, tonalidades, tempo y letra desde una vista pensada para trabajo diario."
       />
 
       <FilterBar filters={state.libraryFilters} categories={songCategories} onChange={actions.setLibraryFilters} />
 
-      <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
+      <div className="space-y-5">
         <div className="space-y-5">
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 min-[1700px]:grid-cols-4">
             {paginatedSongs.map((song) => (
               <SongCard
                 key={song.id}
                 song={song}
                 selected={song.id === activeSong.id}
                 onSelect={() => actions.setActiveSong(song.id)}
+                onEdit={() => abrirEditorDeCanto(song)}
                 onDelete={actions.deleteSong}
               />
             ))}
@@ -138,42 +219,23 @@ function LibraryPage() {
 
           {!paginatedSongs.length ? (
             <EditorialCard className="text-sm text-[var(--on-surface-variant)]">
-              No hay canciones que coincidan con los filtros actuales.
+              No hay cantos que coincidan con los filtros actuales.
             </EditorialCard>
           ) : null}
 
           <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </div>
-
-        <div className="space-y-4">
-          {form.id ? (
-            <DraftEditor
-              title="Editar canción"
-              subtitle="Actualiza metadatos, letra y tono del canto seleccionado."
-              value={form}
-              categories={songCategories}
-              onChange={setForm}
-              onSubmit={async () => {
-                if (!hasPendingChanges) {
-                  return
-                }
-
-                await actions.updateSong(form)
-                sileo.success({
-                  title: 'Canto actualizado',
-                  description: `${form.title || 'El canto'} quedó actualizado en la biblioteca.`,
-                })
-              }}
-              submitLabel="Guardar cambios"
-              submitDisabled={!hasPendingChanges}
-            />
-          ) : (
-            <EditorialCard className="text-sm leading-7 text-[var(--on-surface-variant)]">
-              Selecciona un canto de la biblioteca para editarlo. Las altas nuevas se realizan desde el Centro de carga.
-            </EditorialCard>
-          )}
-        </div>
       </div>
+
+      <SongEditModal
+        open={editorOpen}
+        form={form}
+        categories={songCategories}
+        hasPendingChanges={hasPendingChanges}
+        onChange={setForm}
+        onSubmit={guardarCambiosDeCanto}
+        onClose={cerrarEditorDeCanto}
+      />
     </div>
   )
 }

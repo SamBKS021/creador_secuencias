@@ -1,9 +1,9 @@
 import { createBlendy } from "blendy";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { sileo } from "sileo";
 import { useAppContext } from "../app/store/AppContext.jsx";
 import Button from "../components/ui/Button.jsx";
-import EditorialCard from "../components/ui/EditorialCard.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import DraftEditor from "../features/upload/DraftEditor.jsx";
@@ -12,6 +12,19 @@ import UploadDropzone from "../features/upload/UploadDropzone.jsx";
 import { createEmptySong, getSongCategories } from "../utils/workspace.js";
 
 const BLENDY_ID = "import-review";
+
+const loadModes = [
+  {
+    id: "documents",
+    label: "Importar documentos",
+    description: "Importa archivos .docx para detectar varios cantos, revisar coincidencias por título y confirmar cada alta."
+  },
+  {
+    id: "manual",
+    label: "Alta manual",
+    description: "Completa los datos de un canto y su letra para agregarlo manualmente a tu biblioteca."
+  }
+];
 
 function normalizeMultiline(value) {
   return String(value || "")
@@ -47,9 +60,28 @@ function flattenImportBatch(result, defaultCategory) {
   );
 }
 
+function VistaImportarDocumentos({ onBrowse, disabled }) {
+  return <UploadDropzone onBrowse={onBrowse} blendySourceId={BLENDY_ID} disabled={disabled} />;
+}
+
+function VistaAltaManual({ form, categories, onChange, onSubmit }) {
+  return (
+    <DraftEditor
+      title="Nuevo canto"
+      subtitle="Completa los datos del canto y su letra para agregarlo manualmente a tu biblioteca."
+      value={form}
+      categories={categories}
+      onChange={onChange}
+      onSubmit={onSubmit}
+      submitLabel="Guardar canto"
+    />
+  );
+}
+
 function UploadPage() {
   const { state, actions } = useAppContext();
   const blendyRef = useRef(null);
+  const [searchParams] = useSearchParams();
   const songCategories = useMemo(() => getSongCategories(state.songCategories), [state.songCategories]);
   const defaultCategory = songCategories[0] || "Contemporánea";
   const [form, setForm] = useState(() => createEmptySong({ category: defaultCategory }));
@@ -84,6 +116,8 @@ function UploadPage() {
     () => reviewState.items[reviewState.currentIndex] || null,
     [reviewState.currentIndex, reviewState.items]
   );
+  const loadMode = searchParams.get("modo") === "manual" ? "manual" : "documents";
+  const currentLoadMode = loadModes.find((mode) => mode.id === loadMode) || loadModes[0];
 
   function updateCurrentReviewForm(nextForm) {
     setReviewState((current) => ({
@@ -320,7 +354,7 @@ function UploadPage() {
   if (!state.workspaceRoot) {
     return (
       <EmptyState
-        title="Prepara el almacenamiento antes de importar canciones"
+        title="Prepara el almacenamiento antes de importar cantos"
         description="La app necesita inicializar su espacio de trabajo local para guardar biblioteca, secuencias y exportaciones."
         action={<Button onClick={actions.chooseWorkspace}>Preparar almacenamiento</Button>}
       />
@@ -332,36 +366,22 @@ function UploadPage() {
       <div className="space-y-8">
         <PageHeader
           title="Centro de carga"
-          description="Importa archivos .docx para detectar varios cantos, revisar coincidencias por título y confirmar cada alta de forma individual."
+          description={currentLoadMode.description}
         />
 
-        <UploadDropzone onBrowse={handleImportBatch} blendySourceId={BLENDY_ID} disabled={reviewState.saving} />
-
-        <div className="grid gap-6 xl:grid-cols-[0.55fr_1fr]">
-          <EditorialCard className="space-y-4">
-            <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">Modo manual</h3>
-            <p className="text-sm leading-7 text-[var(--on-surface-variant)]">
-              Crea un canto manualmente llenando su título, autor, tono, tempo y letra desde esta pantalla.
-            </p>
-            <p className="text-sm leading-7 text-[var(--on-surface-variant)]">
-              Si prefieres importar varias canciones desde un documento Word, usa la carga `.docx`: la app detecta
-              los cantos y te permite revisarlos antes de guardarlos.
-            </p>
-          </EditorialCard>
-
-          <DraftEditor
-            title="Nuevo canto"
-            subtitle="Completa los datos del canto y su letra para agregarlo manualmente a tu biblioteca."
-            value={form}
+        {loadMode === "documents" ? (
+          <VistaImportarDocumentos onBrowse={handleImportBatch} disabled={reviewState.saving} />
+        ) : (
+          <VistaAltaManual
+            form={form}
             categories={songCategories}
             onChange={setForm}
             onSubmit={async () => {
               await actions.saveSong(form);
               setForm(createEmptySong({ category: defaultCategory }));
             }}
-            submitLabel="Guardar canto"
           />
-        </div>
+        )}
       </div>
 
       <ImportReviewModal

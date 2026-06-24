@@ -80,9 +80,25 @@ function TopBar() {
     await service.closeMainWindow();
   }
 
+  function handleArrastrarCabecera(event) {
+    if (!appWindow || event.button !== 0) {
+      return;
+    }
+
+    const elemento = event.target instanceof Element ? event.target : null;
+    if (elemento?.closest("a, button, input, select, textarea, [role='button']")) {
+      return;
+    }
+
+    appWindow.startDragging().catch(() => {});
+  }
+
   return (
-    <header className="shrink-0 border-b border-[rgba(67,71,78,0.12)] bg-[var(--topbar-bg)] px-4 py-3 backdrop-blur-sm lg:px-8">
-      <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4">
+    <header
+      className="shrink-0 border-b border-[rgba(67,71,78,0.12)] bg-[var(--topbar-bg)] px-4 py-3 backdrop-blur-sm lg:px-8"
+      onMouseDown={handleArrastrarCabecera}
+    >
+      <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-6">
           <div
             data-tauri-drag-region={isDesktop ? true : undefined}

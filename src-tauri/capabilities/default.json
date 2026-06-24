@@ -3,5 +3,5 @@
   "identifier": "main-capability",
   "description": "Permisos principales para la ventana desktop",
   "windows": ["main"],
-  "permissions": ["core:default", "updater:default"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "updater:default"]
 }

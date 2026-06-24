@@ -5,6 +5,7 @@ import { sileo } from 'sileo'
 import { useAppContext } from '../app/store/AppContext.jsx'
 import Button from '../components/ui/Button.jsx'
 import MobileNav from '../components/layout/MobileNav.jsx'
+import ModalShell from '../components/ui/ModalShell.jsx'
 import SideNav from '../components/layout/SideNav.jsx'
 import TopBar from '../components/layout/TopBar.jsx'
 import { isTauriRuntime } from '../utils/platform.js'
@@ -15,8 +16,10 @@ function ShutdownSyncModal({ open }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[240]"
+      panelClassName="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]"
+    >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
         </div>
@@ -24,8 +27,7 @@ function ShutdownSyncModal({ open }) {
         <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
           Estamos sincronizando con Drive antes de salir para dejar este equipo al día.
         </p>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -52,8 +54,10 @@ function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onI
   }
 
   return (
-    <div className="fixed inset-0 z-[245] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[245]"
+      panelClassName="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 shadow-[var(--modal-shadow)]"
+    >
         <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
           Actualización disponible
         </p>
@@ -96,8 +100,7 @@ function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onI
           </Button>
           <Button onClick={onInstallNow}>Instalar ahora</Button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -109,8 +112,10 @@ function UpdateInstallingModal({ open, progress }) {
   const percent = Math.max(0, Math.min(100, Math.round(progress?.percent || 0)))
 
   return (
-    <div className="fixed inset-0 z-[246] flex items-center justify-center bg-[var(--modal-scrim)] px-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[246]"
+      panelClassName="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]"
+    >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)] animate-spin" />
         </div>
@@ -125,8 +130,7 @@ function UpdateInstallingModal({ open, progress }) {
           />
         </div>
         <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--outline)]">{percent}%</p>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -219,10 +223,10 @@ function AppLayout() {
 
           try {
             await actionsRef.current.exitApplication()
-          } catch (_) {
+          } catch {
             try {
               await appWindow.destroy()
-            } catch (_) {
+            } catch {
               await appWindow.close()
             }
           }
@@ -246,7 +250,7 @@ function AppLayout() {
 
         try {
           await actionsRef.current.syncWorkspaceNow('shutdown', 'merge')
-        } catch (_) {
+        } catch {
           // no bloqueamos el cierre si el sync final falla
         } finally {
           await finishClose()
@@ -294,7 +298,7 @@ function AppLayout() {
         aria-hidden={state.startup.visible}
       >
         <TopBar />
-        <div className="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 items-stretch">
+        <div className="mx-auto flex min-h-0 w-full max-w-[1800px] flex-1 items-stretch">
           <SideNav />
           <main className="min-w-0 flex-1 overflow-hidden">
             <div className="app-scroll h-full overflow-x-hidden overflow-y-auto px-4 pb-28 pt-8 lg:px-8 lg:pb-10">

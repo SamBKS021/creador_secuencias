@@ -1,5 +1,6 @@
 import { buildStats } from '../utils/workspace.js'
 import { defaultSongCategories } from '../utils/workspace.js'
+import { recalcularFechasUsoDeCantos } from '../utils/workspace.js'
 
 const CONFIG_KEY = 'creador-secuencias-config'
 const DATA_KEY = 'creador-secuencias-data'
@@ -564,9 +565,11 @@ export async function saveSong(payload) {
   const timestamp = nowIso()
   const isNewSong = !payload.id
   const songId = payload.id || `canto-${String(data.appState.nextSongId).padStart(4, '0')}`
+  const existingSong = data.songs.find((item) => item.id === songId)
 
   const song = {
     playCount: 0,
+    fechasUso: existingSong?.fechasUso || [],
     ...payload,
     chords: '',
     id: songId,
@@ -627,10 +630,12 @@ export async function saveSequence(payload) {
     data.sequences.unshift(sequence)
   }
 
+  data.songs = recalcularFechasUsoDeCantos(data.songs, data.sequences)
   writeData(data)
 
   return {
     sequence,
+    songs: data.songs,
     stats: buildStats(data.songs, data.sequences),
   }
 }
@@ -639,6 +644,7 @@ export async function deleteSequence(sequenceId) {
   const data = readData()
   const removedSequence = data.sequences.find((sequence) => sequence.id === sequenceId)
   data.sequences = data.sequences.filter((sequence) => sequence.id !== sequenceId)
+  data.songs = recalcularFechasUsoDeCantos(data.songs, data.sequences)
   writeData(data)
 
   if (removedSequence) {

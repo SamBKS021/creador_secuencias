@@ -1,8 +1,54 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
+import { ChartColumn, ChevronDown, ChevronUp, GripVertical, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import ModalShell from "../../components/ui/ModalShell.jsx";
+import SongUsageChart from "../library/SongUsageChart.jsx";
+
+function SongUsageModal({ song, onClose }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <ModalShell
+      className="overflow-y-auto py-6"
+      panelClassName="relative w-full max-w-3xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--card-shadow)]"
+      onClose={onClose}
+    >
+      <button
+        type="button"
+        aria-label="Cerrar uso del canto"
+        className="absolute right-4 top-4 z-10 rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--primary)]"
+        onClick={onClose}
+      >
+        <X size={20} />
+      </button>
+
+      <div className="mb-5 pr-10">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Uso del canto</p>
+        <h3 className="font-headline mt-2 text-3xl font-extrabold text-[var(--primary)]">{song?.title || "Canto"}</h3>
+        <p className="mt-1 text-sm text-[var(--on-surface-variant)]">{song?.author || "Autor sin registrar"}</p>
+      </div>
+
+      <SongUsageChart fechasUso={song?.fechasUso} />
+    </ModalShell>,
+    document.body,
+  );
+}
 
 function SequenceItemCard({ item, song, index, motionDelay = 0, onRemove, onMove, canMoveUp, canMoveDown }) {
+  const [usageModalOpen, setUsageModalOpen] = useState(false);
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -88,14 +134,29 @@ function SequenceItemCard({ item, song, index, motionDelay = 0, onRemove, onMove
           </div>
         </div>
 
-        <button
-          className="rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--error)]"
-          onClick={() => onRemove(item.id)}
-          type="button"
-        >
-          <Trash2 size={16} />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            className="rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={() => setUsageModalOpen(true)}
+            type="button"
+            disabled={!song}
+            aria-label={`Ver uso de ${song?.title || "este canto"}`}
+          >
+            <ChartColumn size={16} />
+          </button>
+
+          <button
+            className="rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--error)]"
+            onClick={() => onRemove(item.id)}
+            type="button"
+            aria-label={`Eliminar ${song?.title || "canto"} de la secuencia`}
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
+
+      {usageModalOpen ? <SongUsageModal song={song} onClose={() => setUsageModalOpen(false)} /> : null}
     </div>
   );
 }

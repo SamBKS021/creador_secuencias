@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '../app/store/AppContext.jsx'
 import Button from '../components/ui/Button.jsx'
 import EditorialCard from '../components/ui/EditorialCard.jsx'
+import ModalShell from '../components/ui/ModalShell.jsx'
 import PageHeader from '../components/ui/PageHeader.jsx'
 
 function FirstSyncChoiceModal({ open, loading, onCancel, onChoose }) {
@@ -13,8 +14,10 @@ function FirstSyncChoiceModal({ open, loading, onCancel, onChoose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-[var(--modal-scrim)] px-4">
-      <div className="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[230]"
+      panelClassName="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
+    >
         <div className="space-y-3">
           <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
             Primera sincronización
@@ -57,8 +60,7 @@ function FirstSyncChoiceModal({ open, loading, onCancel, onChoose }) {
             Cancelar
           </Button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 
@@ -68,8 +70,10 @@ function SyncInProgressModal({ open }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[235] flex items-center justify-center bg-[var(--modal-scrim)] px-4">
-      <div className="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[235]"
+      panelClassName="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 text-center shadow-[var(--modal-shadow)]"
+    >
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--surface-container-low)]">
           <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-[var(--outline-variant)] border-t-[var(--primary)]" />
         </div>
@@ -77,8 +81,7 @@ function SyncInProgressModal({ open }) {
         <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
           Estamos actualizando respaldos y revisando cambios remotos. Esto puede tardar unos segundos.
         </p>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

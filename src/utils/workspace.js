@@ -104,6 +104,7 @@ export function createEmptySong(overrides = {}) {
     sourcePath: '',
     status: 'published',
     playCount: 0,
+    fechasUso: [],
     createdAt: '',
     updatedAt: '',
     ...overrides,
@@ -153,3 +154,24 @@ export function generateSequenceMetrics(sequence, songs) {
 }
 
 export const defaultLibraryFilters = DEFAULT_FILTERS
+
+export function recalcularFechasUsoDeCantos(songs, sequences) {
+  const fechasPorCanto = new Map()
+
+  sequences.forEach((sequence) => {
+    const fechaServicio = String(sequence.serviceDate || '').slice(0, 10)
+    if (!fechaServicio) {
+      return
+    }
+
+    const cantosEnSecuencia = new Set((sequence.items || []).map((item) => item.songId).filter(Boolean))
+    cantosEnSecuencia.forEach((songId) => {
+      fechasPorCanto.set(songId, [...(fechasPorCanto.get(songId) || []), fechaServicio])
+    })
+  })
+
+  return songs.map((song) => ({
+    ...song,
+    fechasUso: [...(fechasPorCanto.get(song.id) || [])].sort(),
+  }))
+}

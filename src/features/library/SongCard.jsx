@@ -1,10 +1,12 @@
-import { MoreVertical, Trash2 } from 'lucide-react'
+import { MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { summarizeTempo } from '../../utils/formatters.js'
+import { formatDisplayDate, summarizeTempo } from '../../utils/formatters.js'
 
-function SongCard({ song, selected, onSelect, onDelete }) {
+function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const fechasUso = Array.isArray(song.fechasUso) ? song.fechasUso : []
+  const ultimaFechaUso = fechasUso.length ? formatDisplayDate(fechasUso[fechasUso.length - 1]) : ''
 
   useEffect(() => {
     if (!menuOpen) {
@@ -30,6 +32,7 @@ function SongCard({ song, selected, onSelect, onDelete }) {
         selected ? 'cta-gradient text-white' : '',
       ].join(' ')}
       onClick={onSelect}
+      onDoubleClick={onEdit}
       type="button"
     >
       <span
@@ -86,6 +89,19 @@ function SongCard({ song, selected, onSelect, onDelete }) {
               >
                 <button
                   type="button"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)]"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    setMenuOpen(false)
+                    onEdit()
+                  }}
+                >
+                  <Pencil size={16} />
+                  Editar canto
+                </button>
+                <button
+                  type="button"
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[var(--error)] transition hover:bg-[rgba(186,26,26,0.08)]"
                   onClick={(event) => {
                     event.preventDefault()
@@ -95,14 +111,14 @@ function SongCard({ song, selected, onSelect, onDelete }) {
                   }}
                 >
                   <Trash2 size={16} />
-                  Eliminar canción
+                  Eliminar canto
                 </button>
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Tonalidad</p>
             <p className="mt-1 font-semibold">{song.key || 'Sin definir'}</p>
@@ -117,6 +133,13 @@ function SongCard({ song, selected, onSelect, onDelete }) {
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Estado</p>
             <p className="mt-1 font-semibold">{song.status === 'published' ? 'En biblioteca' : 'Borrador'}</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] opacity-60">Uso</p>
+            <p className="mt-1 font-semibold">
+              {fechasUso.length ? `${fechasUso.length} ${fechasUso.length === 1 ? 'vez' : 'veces'}` : 'Sin uso'}
+              {ultimaFechaUso ? <span className="block text-xs opacity-70">{ultimaFechaUso}</span> : null}
+            </p>
           </div>
         </div>
       </div>

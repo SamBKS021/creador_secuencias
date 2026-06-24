@@ -137,7 +137,7 @@ export function AppProvider({ children }) {
             if (refreshedSyncStatus) {
               dispatch({ type: 'sync:set', payload: refreshedSyncStatus })
             }
-          } catch (_) {
+          } catch {
             updateStartup(82, 'No se pudo sincronizar con Drive. Continuando en local...')
             const refreshedSyncStatus = await service.getSyncStatus?.().catch(() => null)
             if (refreshedSyncStatus) {
@@ -217,7 +217,7 @@ export function AppProvider({ children }) {
             installProgress: null,
           },
         })
-      } catch (_) {
+      } catch {
         dispatch({ type: 'update:set', payload: { checking: false, modalEligible: true } })
       }
     })()
@@ -225,14 +225,19 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     const themeMode = state.preferences.themeMode || 'light'
+    const motionMode = state.preferences.motionMode || 'normal'
     document.documentElement.dataset.themeMode = themeMode
     document.body.dataset.themeMode = themeMode
+    document.documentElement.dataset.motionMode = motionMode
+    document.body.dataset.motionMode = motionMode
 
     return () => {
       delete document.documentElement.dataset.themeMode
       delete document.body.dataset.themeMode
+      delete document.documentElement.dataset.motionMode
+      delete document.body.dataset.motionMode
     }
-  }, [state.preferences.themeMode])
+  }, [state.preferences.themeMode, state.preferences.motionMode])
 
   async function chooseWorkspace() {
     const result = await service.selectWorkspaceRoot()
@@ -317,6 +322,7 @@ export function AppProvider({ children }) {
       type: 'sequence:save',
       payload: {
         sequence: result.sequence,
+        songs: result.songs,
         stats: result.stats,
       },
     })

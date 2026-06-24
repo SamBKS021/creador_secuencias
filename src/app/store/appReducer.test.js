@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildStats, filterSongs } from '../../utils/workspace.js'
+import { buildStats, filterSongs, recalcularFechasUsoDeCantos } from '../../utils/workspace.js'
 
 const songs = [
   { id: '1', title: 'Alfa', author: 'Autor', category: 'Himno', tempo: 65, lyrics: '', chords: '', createdAt: '2026-03-01T00:00:00Z', updatedAt: '2026-03-02T00:00:00Z' },
@@ -28,5 +28,27 @@ describe('workspace utilities', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe('2')
+  })
+
+  it('recalcularFechasUsoDeCantos guarda una fecha por canto y secuencia', () => {
+    const result = recalcularFechasUsoDeCantos(songs, [
+      {
+        id: 'seq-1',
+        serviceDate: '2026-03-23',
+        items: [
+          { songId: '1' },
+          { songId: '1' },
+          { songId: '2' },
+        ],
+      },
+      {
+        id: 'seq-2',
+        serviceDate: '2026-03-30',
+        items: [{ songId: '1' }],
+      },
+    ])
+
+    expect(result.find((song) => song.id === '1').fechasUso).toEqual(['2026-03-23', '2026-03-30'])
+    expect(result.find((song) => song.id === '2').fechasUso).toEqual(['2026-03-23'])
   })
 })

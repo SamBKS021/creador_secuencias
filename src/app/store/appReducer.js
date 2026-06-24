@@ -5,6 +5,7 @@ import {
   createEmptySong,
   defaultLibraryFilters,
   defaultSongCategories,
+  recalcularFechasUsoDeCantos,
 } from '../../utils/workspace.js'
 
 export const initialState = {
@@ -225,23 +226,27 @@ export function appReducer(state, action) {
     }
     case 'sequence:save': {
       const sequence = action.payload.sequence
+      const songs = action.payload.songs || state.songs
       const sequences = state.sequences.some((item) => item.id === sequence.id)
         ? state.sequences.map((item) => (item.id === sequence.id ? sequence : item))
         : [sequence, ...state.sequences]
 
       return {
         ...state,
+        songs,
         sequences,
-        stats: action.payload.stats || buildStats(state.songs, sequences),
+        stats: action.payload.stats || buildStats(songs, sequences),
         activeSequenceId: sequence.id,
       }
     }
     case 'sequence:delete': {
       const sequences = state.sequences.filter((sequence) => sequence.id !== action.payload)
+      const songs = recalcularFechasUsoDeCantos(state.songs, sequences)
       return {
         ...state,
+        songs,
         sequences,
-        stats: buildStats(state.songs, sequences),
+        stats: buildStats(songs, sequences),
         activeSequenceId: sequences[0]?.id || '',
       }
     }

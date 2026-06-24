@@ -54,20 +54,20 @@ const sections = [
   },
   {
     id: "biblioteca",
-    label: "Biblioteca de canciones",
+    label: "Biblioteca de cantos",
     icon: Library,
     eyebrow: "Repertorio",
     title: "Consulta y edicion de cantos guardados",
     summary:
-      "Biblioteca es la vista para revisar repertorio existente, ajustar metadatos y corregir letra, tono o tempo.",
+      "Biblioteca de cantos es la vista para revisar repertorio existente, ajustar metadatos y corregir letra, tono o tempo.",
     highlights: [
       "Permite buscar por titulo, autor, tonalidad y otros datos del canto.",
-      "Los filtros de esta vista son independientes del constructor de secuencias.",
-      "Cada cancion puede abrirse para editarse sin volver a importarla.",
+      "Muestra solo los cantos guardados para aprovechar mejor el espacio de trabajo.",
+      "Cada canto puede editarse con doble clic o desde los tres puntos de su tarjeta.",
     ],
     tips: [
       "Usa los filtros para mantenimiento rapido del repertorio, no para construir secuencias.",
-      "Guarda cambios solo cuando confirmes que el canto quedo correcto.",
+      "Guarda cambios en el modal solo cuando confirmes que el canto quedo correcto.",
       "Si necesitas dar de alta un canto nuevo, hazlo desde Centro de carga.",
     ],
   },
@@ -76,18 +76,18 @@ const sections = [
     label: "Centro de carga",
     icon: CloudUpload,
     eyebrow: "Altas nuevas",
-    title: "Ingreso manual o por importacion DOCX",
+    title: "Ingreso por documentos o alta manual",
     summary:
-      "Centro de carga concentra la entrada de nuevos cantos y el flujo de revision para evitar duplicados o errores al importar.",
+      "Centro de carga concentra la entrada de nuevos cantos. Desde el menu lateral puedes desplegarlo y elegir entre importar documentos o hacer un alta manual.",
     highlights: [
-      "Puedes crear un canto manualmente con titulo, autor, categoria, tonalidad, tempo y letra.",
-      "La importacion DOCX detecta bloques y te deja revisar cada canto antes de guardarlo.",
+      "Importar documentos abre el flujo para archivos .docx y detecta varios cantos para revisarlos uno por uno.",
+      "Alta manual muestra solo el formulario para crear un canto con titulo, autor, categoria, tonalidad, tempo y letra.",
       "Cuando encuentra coincidencias, te permite usar el existente, sobrescribirlo o guardar uno aparte.",
     ],
     tips: [
+      "Abre Centro de carga desde la sidebar para ver sus dos opciones debajo del menu principal.",
       "Si importas varios documentos, revisa cada canto con calma antes de confirmar.",
-      "Aprovecha las coincidencias detectadas para no llenar la biblioteca de duplicados.",
-      "Si una categoria no existe, creala primero desde Ajustes.",
+      "Si una categoria no existe, creala primero desde Ajustes antes de dar de alta el canto.",
     ],
   },
   {
@@ -139,7 +139,7 @@ const sections = [
     highlights: [
       "La barra superior mantiene accesos directos a las vistas principales.",
       "El icono de ayuda con el signo ? abre esta documentacion integrada en cualquier momento.",
-      "La sidebar concentra la navegacion principal y deja Soporte como un flujo separado de contacto.",
+      "La sidebar concentra la navegacion principal y despliega Centro de carga en Importar documentos y Alta manual.",
     ],
     tips: [
       "Usa Inicio como pivote y la sidebar para saltar entre modulos sin perder contexto.",

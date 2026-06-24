@@ -74,7 +74,7 @@ function ImportReviewModal({
   const { candidate, form } = reviewItem;
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-hidden p-4 sm:p-6">
+    <div className="app-modal-overlay fixed inset-0 z-[80] overflow-hidden p-4 sm:p-6">
       <button
         type="button"
         aria-label="Cerrar revisión"
@@ -83,7 +83,7 @@ function ImportReviewModal({
       />
 
       <div className="relative z-10 flex h-full w-full items-center justify-center">
-        <div data-blendy-to="import-review" className="w-full max-w-5xl">
+        <div data-blendy-to="import-review" className="app-modal-panel w-full max-w-5xl">
           <div className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[34px] bg-[var(--surface)] p-4 shadow-[0_32px_80px_-36px_rgba(0,24,49,0.6)] sm:max-h-[calc(100vh-3rem)] sm:p-6">
             <div className="mb-4 flex shrink-0 flex-col gap-4 rounded-[28px] bg-[var(--surface-container-high)] px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-3">

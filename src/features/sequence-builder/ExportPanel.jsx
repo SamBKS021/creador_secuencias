@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import { FaFileWord } from "react-icons/fa";
 import Button from "../../components/ui/Button.jsx";
 import EditorialCard from "../../components/ui/EditorialCard.jsx";
+import ModalShell from "../../components/ui/ModalShell.jsx";
 import { formatDisplayDate } from "../../utils/formatters.js";
 
 function ExportOverwriteModal({ exportCheck, onCancel, onConfirm, loading }) {
@@ -12,8 +13,10 @@ function ExportOverwriteModal({ exportCheck, onCancel, onConfirm, loading }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-[var(--modal-scrim)] px-4">
-      <div className="w-full max-w-lg rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]">
+    <ModalShell
+      zIndex="z-[220]"
+      panelClassName="w-full max-w-lg rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
+    >
         <div className="space-y-3">
           <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
             Exportación existente
@@ -38,8 +41,7 @@ function ExportOverwriteModal({ exportCheck, onCancel, onConfirm, loading }) {
             Reemplazar archivo
           </Button>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }
 
