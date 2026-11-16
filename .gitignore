@@ -1,1 +1,36 @@
-x
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+src-tauri/updater.key
+src-tauri/updater.key.pub
+src-tauri/updater*.key
+src-tauri/updater*.key.pub
+src-tauri/*.key
+src-tauri/*.key.pub
+src-tauri/oauth.defaults.json
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+src-tauri/target/
+target/
+dist/
+node_modules/

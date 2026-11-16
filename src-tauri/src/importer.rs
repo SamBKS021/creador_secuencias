@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::sync::OnceLock;
 
 use regex::Regex;
 use roxmltree::{Document, Node};
@@ -12,6 +13,26 @@ use crate::errors::{AppError, AppResult};
 use crate::models::{
     ImportBatchResult, ImportCandidate, ImportDocumentResult, Song, SongChord, SongContentRecord, SongLine, SongSection,
 };
+
+const MAX_DOCUMENT_XML_BYTES: u64 = 10 * 1024 * 1024;
+static KEY_REGEX: OnceLock<Regex> = OnceLock::new();
+static CHORD_REGEX: OnceLock<Regex> = OnceLock::new();
+
+fn key_regex() -> &'static Regex {
+    KEY_REGEX.get_or_init(|| {
+        Regex::new(r"(?i)tono:\s*([A-G][#b]?(?:m|maj|min|sus|dim|aug|7|9|11|13)?)")
+            .expect("valid key regex")
+    })
+}
+
+fn chord_regex() -> &'static Regex {
+    CHORD_REGEX.get_or_init(|| {
+        Regex::new(
+            r"(?i)([A-G](?:#|b)?(?:maj7|maj|min|m|sus2|sus4|dim|aug|add9|m7|m9|m11|m13|7|9|11|13|6)?(?:/[A-G](?:#|b)?)?)",
+        )
+        .expect("valid chord regex")
+    })
+}
 
 #[derive(Debug, Clone)]
 struct ParsedParagraph {
@@ -93,12 +114,29 @@ fn parse_docx_document(path: &Path, songs: &[Song]) -> AppResult<ImportDocumentR
 fn read_document_xml(path: &Path) -> AppResult<String> {
     let file = File::open(path)?;
     let mut archive = ZipArchive::new(file).map_err(|error| AppError::Message(error.to_string()))?;
-    let mut xml_file = archive
+    let xml_file = archive
         .by_name("word/document.xml")
         .map_err(|error| AppError::Message(error.to_string()))?;
-    let mut xml = String::new();
-    xml_file.read_to_string(&mut xml)?;
-    Ok(xml)
+
+    if xml_file.size() > MAX_DOCUMENT_XML_BYTES {
+        return Err(AppError::from(
+            "El archivo .docx supera el tamano maximo permitido para procesarse.",
+        ));
+    }
+
+    let mut bytes = Vec::new();
+    xml_file
+        .take(MAX_DOCUMENT_XML_BYTES + 1)
+        .read_to_end(&mut bytes)?;
+
+    if bytes.len() as u64 > MAX_DOCUMENT_XML_BYTES {
+        return Err(AppError::from(
+            "El archivo .docx supera el tamano maximo permitido para procesarse.",
+        ));
+    }
+
+    String::from_utf8(bytes)
+        .map_err(|_| AppError::from("El contenido XML del archivo .docx no es UTF-8 valido."))
 }
 
 fn parse_paragraphs(xml: &str) -> AppResult<Vec<ParsedParagraph>> {
@@ -106,28 +144,39 @@ fn parse_paragraphs(xml: &str) -> AppResult<Vec<ParsedParagraph>> {
     let paragraphs = document
         .descendants()
         .filter(|node| node.is_element() && node.tag_name().name() == "p")
-        .filter_map(parse_paragraph)
+        .flat_map(parse_paragraph)
         .collect::<Vec<_>>();
 
     Ok(paragraphs)
 }
 
-fn parse_paragraph(node: Node<'_, '_>) -> Option<ParsedParagraph> {
-    let text = node
-        .descendants()
-        .filter(|child| child.is_element() && child.tag_name().name() == "t")
-        .filter_map(|child| child.text())
-        .collect::<String>();
+fn parse_paragraph(node: Node<'_, '_>) -> Vec<ParsedParagraph> {
+    let mut text = String::new();
+    for child in node.descendants() {
+        if !child.is_element() {
+            continue;
+        }
+        match child.tag_name().name() {
+            "t" => {
+                if let Some(fragment) = child.text() {
+                    text.push_str(fragment);
+                }
+            }
+            "tab" => text.push_str("    "),
+            "br" | "cr" => text.push('\n'),
+            _ => {}
+        }
+    }
 
     let normalized = text.replace('\u{00A0}', " ");
     if normalized.trim().is_empty() {
-        return Some(ParsedParagraph {
+        return vec![ParsedParagraph {
             text: String::new(),
             is_bold: false,
             has_highlight: false,
             max_size: 0,
             has_hyperlink: false,
-        });
+        }];
     }
 
     let is_bold = node
@@ -149,13 +198,28 @@ fn parse_paragraph(node: Node<'_, '_>) -> Option<ParsedParagraph> {
         .max()
         .unwrap_or(0);
 
-    Some(ParsedParagraph {
-        text: normalized,
-        is_bold,
-        has_highlight,
-        max_size,
-        has_hyperlink,
-    })
+    normalized
+        .split('\n')
+        .map(|segment| {
+            if segment.trim().is_empty() {
+                ParsedParagraph {
+                    text: String::new(),
+                    is_bold: false,
+                    has_highlight: false,
+                    max_size: 0,
+                    has_hyperlink: false,
+                }
+            } else {
+                ParsedParagraph {
+                    text: segment.to_string(),
+                    is_bold,
+                    has_highlight,
+                    max_size,
+                    has_hyperlink,
+                }
+            }
+        })
+        .collect()
 }
 
 fn build_candidates(paragraphs: &[ParsedParagraph], path: &Path, songs: &[Song]) -> Vec<ImportCandidate> {
@@ -345,7 +409,7 @@ fn detect_author(paragraphs: &[ParsedParagraph]) -> String {
 }
 
 fn detect_key(paragraphs: &[ParsedParagraph]) -> String {
-    let key_regex = Regex::new(r"(?i)tono:\s*([A-G][#b]?(?:m|maj|min|sus|dim|aug|7|9|11|13)?)").unwrap();
+    let key_regex = key_regex();
     for paragraph in paragraphs {
         if let Some(captures) = key_regex.captures(paragraph.text.trim()) {
             if let Some(value) = captures.get(1) {
@@ -396,18 +460,13 @@ fn is_chord_line(text: &str) -> bool {
 }
 
 fn parse_chords(text: &str) -> Vec<SongChord> {
-    let chord_regex = Regex::new(
-        r"(?i)([A-G](?:#|b)?(?:maj7|maj|min|m|sus2|sus4|dim|aug|add9|m7|m9|m11|m13|7|9|11|13|6)?(?:/[A-G](?:#|b)?)?)",
-    )
-    .unwrap();
-
-    chord_regex
+    chord_regex()
         .captures_iter(text)
         .filter_map(|captures| captures.get(1))
         .filter(|matched| has_valid_chord_boundaries(text, matched.start(), matched.end()))
         .map(|matched| SongChord {
             symbol: matched.as_str().to_string(),
-            offset: matched.start(),
+            offset: text[..matched.start()].chars().count(),
         })
         .collect()
 }
@@ -484,11 +543,43 @@ fn render_chord_line(chords: &[SongChord]) -> String {
     let mut line = String::new();
 
     for chord in chords {
-        while line.len() < chord.offset {
+        while line.chars().count() < chord.offset {
             line.push(' ');
         }
         line.push_str(&chord.symbol);
     }
 
     line.trim_end().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_chords, parse_paragraphs};
+
+    #[test]
+    fn parses_soft_breaks_and_tabs_inside_word_paragraphs() {
+        let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+            <w:body>
+                <w:p>
+                    <w:r><w:t>VERSO 1</w:t><w:br/><w:t>G</w:t><w:tab/><w:t>C</w:t><w:br/><w:t>Señor</w:t><w:tab/><w:t>te alabo</w:t></w:r>
+                </w:p>
+            </w:body>
+        </w:document>"#;
+
+        let paragraphs = parse_paragraphs(xml).expect("valid xml");
+        assert_eq!(paragraphs.len(), 3);
+        assert_eq!(paragraphs[0].text, "VERSO 1");
+        assert_eq!(paragraphs[1].text, "G    C");
+        assert_eq!(paragraphs[2].text, "Señor    te alabo");
+    }
+
+    #[test]
+    fn stores_chord_offsets_as_char_positions_with_accents() {
+        let chords = parse_chords("¿Quién   C   ñá   Am");
+        assert_eq!(chords.len(), 2);
+        assert_eq!(chords[0].symbol, "C");
+        assert_eq!(chords[0].offset, 9);
+        assert_eq!(chords[1].symbol, "Am");
+        assert_eq!(chords[1].offset, 18);
+    }
 }

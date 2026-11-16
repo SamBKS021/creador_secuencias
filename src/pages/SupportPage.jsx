@@ -18,19 +18,23 @@ import EditorialCard from "../components/ui/EditorialCard.jsx";
 import PageHeader from "../components/ui/PageHeader.jsx";
 import service from "../services/workspaceService.js";
 
+const MAX_CONTACT_NAME_LENGTH = 80;
+const MAX_SUBJECT_LENGTH = 120;
+const MAX_MESSAGE_LENGTH = 6000;
+
 const REQUEST_OPTIONS = [
   {
     id: "bug",
     title: "Reportar un error",
     description:
-      "Usa esta opcion si algo falla, se cierra o no responde como deberia.",
+      "Usa esta opción si algo falla, se cierra o no responde como debería.",
     icon: Bug
   },
   {
     id: "mejora",
     title: "Proponer una mejora",
     description:
-      "Usa esta opcion para pedir cambios de flujo, interfaz o nuevas funciones.",
+      "Usa esta opción para pedir cambios de flujo, interfaz o nuevas funciones.",
     icon: Lightbulb
   }
 ];
@@ -159,12 +163,12 @@ function SupportPage() {
       await navigator.clipboard.writeText(supportConfig.recipientEmail);
       sileo.success({
         title: "Correo copiado",
-        description: `${supportConfig.recipientEmail} ya esta en el portapapeles.`
+        description: `${supportConfig.recipientEmail} ya está en el portapapeles.`
       });
     } catch {
       sileo.error({
         title: "No se pudo copiar el correo",
-        description: "Intentalo de nuevo desde este mismo panel."
+        description: "Inténtalo de nuevo desde este mismo panel."
       });
     }
   }
@@ -172,8 +176,8 @@ function SupportPage() {
   async function handlePickAttachments() {
     if (attachments.length >= supportConfig.maxAttachments) {
       sileo.warning({
-        title: "Limite alcanzado",
-        description: `Solo puedes adjuntar hasta ${supportConfig.maxAttachments} archivos por envio.`
+        title: "Límite alcanzado",
+        description: `Solo puedes adjuntar hasta ${supportConfig.maxAttachments} archivos por envío.`
       });
       return;
     }
@@ -191,7 +195,7 @@ function SupportPage() {
           title: "No se pudieron adjuntar archivos",
           description: readErrorMessage(
             error,
-            "Revisa los archivos seleccionados e intentalo de nuevo."
+            "Revisa los archivos seleccionados e inténtalo de nuevo."
           )
         });
       }
@@ -207,13 +211,54 @@ function SupportPage() {
       return;
     }
 
-    const mapped = files.map((file) => ({
-      fileName: file.name,
-      filePath: `${file.name}:${file.size}:${file.lastModified}`,
-      sizeBytes: file.size
-    }));
+    const allowedExtensions = new Set(
+      (supportConfig.allowedExtensions || []).map((extension) => extension.toLowerCase())
+    );
+    const validFiles = [];
+    const rejectedNames = [];
 
-    setAttachments((current) => mergeAttachments(current, mapped));
+    for (const file of files) {
+      const ext = file.name.includes(".") ? file.name.split(".").pop().toLowerCase() : "";
+      if (allowedExtensions.size > 0 && !allowedExtensions.has(ext)) {
+        rejectedNames.push(file.name);
+        continue;
+      }
+
+      validFiles.push({
+        fileName: file.name,
+        filePath: `${file.name}:${file.size}:${file.lastModified}`,
+        sizeBytes: file.size
+      });
+    }
+
+    if (rejectedNames.length) {
+      sileo.warning({
+        title: "Formato no permitido",
+        description: `Se omitieron archivos no soportados: ${rejectedNames.join(", ")}.`
+      });
+    }
+
+    const merged = mergeAttachments(attachments, validFiles);
+    if (merged.length > supportConfig.maxAttachments) {
+      sileo.warning({
+        title: "Límite de adjuntos",
+        description: `Solo puedes adjuntar hasta ${supportConfig.maxAttachments} archivos por envío.`
+      });
+      event.target.value = "";
+      return;
+    }
+
+    const nextTotalBytes = merged.reduce((sum, item) => sum + (item.sizeBytes || 0), 0);
+    if (nextTotalBytes > supportConfig.maxTotalBytes) {
+      sileo.warning({
+        title: "Adjuntos demasiado pesados",
+        description: `Reduce el total a menos de ${formatBytes(supportConfig.maxTotalBytes)}.`
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setAttachments(merged);
     event.target.value = "";
   }
 
@@ -237,10 +282,26 @@ function SupportPage() {
       return false;
     }
 
+    if (name.length > MAX_CONTACT_NAME_LENGTH) {
+      sileo.warning({
+        title: "Nombre demasiado largo",
+        description: `Usa máximo ${MAX_CONTACT_NAME_LENGTH} caracteres.`
+      });
+      return false;
+    }
+
     if (!subject) {
       sileo.warning({
         title: "Falta la cabecera",
         description: "Escribe un mensaje corto para identificar el asunto."
+      });
+      return false;
+    }
+
+    if (subject.length > MAX_SUBJECT_LENGTH) {
+      sileo.warning({
+        title: "Cabecera demasiado larga",
+        description: `Usa máximo ${MAX_SUBJECT_LENGTH} caracteres.`
       });
       return false;
     }
@@ -253,10 +314,18 @@ function SupportPage() {
       return false;
     }
 
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      sileo.warning({
+        title: "Mensaje demasiado largo",
+        description: `Usa máximo ${MAX_MESSAGE_LENGTH} caracteres.`
+      });
+      return false;
+    }
+
     if (attachments.length > supportConfig.maxAttachments) {
       sileo.warning({
         title: "Demasiados adjuntos",
-        description: `El limite actual es de ${supportConfig.maxAttachments} archivos.`
+        description: `El límite actual es de ${supportConfig.maxAttachments} archivos.`
       });
       return false;
     }
@@ -275,7 +344,7 @@ function SupportPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!validateBeforeSend()) {
+    if (sending || !validateBeforeSend()) {
       return;
     }
 
@@ -293,7 +362,7 @@ function SupportPage() {
       sileo.success({
         title: "Solicitud enviada",
         description:
-          "El correo de soporte se envio correctamente con los datos capturados."
+          "El correo de soporte se envió correctamente con los datos capturados."
       });
 
       setForm((current) => ({
@@ -307,7 +376,7 @@ function SupportPage() {
         title: "No se pudo enviar la solicitud",
         description: readErrorMessage(
           error,
-          "Intentalo de nuevo en unos momentos."
+          "Inténtalo de nuevo en unos momentos."
         )
       });
     } finally {
@@ -331,7 +400,7 @@ function SupportPage() {
                 Elegir tipo
               </p>
               <h2 className="mt-2 font-headline text-2xl font-extrabold text-[var(--primary)]">
-                Que quieres enviar
+                Qué quieres enviar
               </h2>
             </div>
 
@@ -381,7 +450,7 @@ function SupportPage() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--outline)]">
-                  Buzon de destino
+                  Buzón de destino
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--primary)]">
                   {loadingConfig
@@ -391,8 +460,8 @@ function SupportPage() {
               </div>
             </div>
             <p className="text-sm leading-6 text-[var(--on-surface-variant)]">
-              Todo lo que envies desde aqui llega a un correo de soporte
-              dedicado. Si hace falta, puedes copiar la direccion para
+              Todo lo que envíes desde aquí llega a un correo de soporte
+              dedicado. Si hace falta, puedes copiar la dirección para
               compartirla fuera de la app.
             </p>
             <Button
@@ -415,13 +484,13 @@ function SupportPage() {
                   Adjuntos permitidos
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--primary)]">
-                  Imagenes, PDF y DOCX
+                  Imágenes, PDF y DOCX
                 </p>
               </div>
             </div>
             <p className="text-sm leading-6 text-[var(--on-surface-variant)]">
               Puedes adjuntar hasta {supportConfig.maxAttachments} archivo(s)
-              por envio, con un total de{" "}
+              por envío, con un total de{" "}
               {formatBytes(supportConfig.maxTotalBytes)}.
             </p>
             <p className="text-xs leading-6 text-[var(--outline)]">
@@ -436,7 +505,7 @@ function SupportPage() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--outline)]">
-                  Como usar esta seccion
+                  Cómo usar esta sección
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--primary)]">
                   Flujo recomendado
@@ -465,12 +534,18 @@ function SupportPage() {
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-[var(--primary)]">
-                Nombre
-              </span>
+            <label className="block space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-[var(--primary)]">
+                  Nombre
+                </span>
+                <span className="text-xs text-[var(--outline)]">
+                  {form.contactName.length}/{MAX_CONTACT_NAME_LENGTH}
+                </span>
+              </div>
               <input
                 type="text"
+                maxLength={MAX_CONTACT_NAME_LENGTH}
                 value={form.contactName}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -484,12 +559,18 @@ function SupportPage() {
               />
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-[var(--primary)]">
-                Cabecera del mensaje
-              </span>
+            <label className="block space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-[var(--primary)]">
+                  Cabecera del mensaje
+                </span>
+                <span className="text-xs text-[var(--outline)]">
+                  {form.subject.length}/{MAX_SUBJECT_LENGTH}
+                </span>
+              </div>
               <input
                 type="text"
+                maxLength={MAX_SUBJECT_LENGTH}
                 value={form.subject}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -502,16 +583,22 @@ function SupportPage() {
                 required
               />
               <p className="text-xs leading-6 text-[var(--outline)]">
-                Al enviar, el asunto final se arma automaticamente con el tipo y
+                Al enviar, el asunto final se arma automáticamente con el tipo y
                 tu nombre.
               </p>
             </label>
 
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-[var(--primary)]">
-                Mensaje
-              </span>
+            <label className="block space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-[var(--primary)]">
+                  Mensaje
+                </span>
+                <span className="text-xs text-[var(--outline)]">
+                  {form.message.length}/{MAX_MESSAGE_LENGTH}
+                </span>
+              </div>
               <textarea
+                maxLength={MAX_MESSAGE_LENGTH}
                 value={form.message}
                 onChange={(event) =>
                   setForm((current) => ({
@@ -521,8 +608,8 @@ function SupportPage() {
                 }
                 placeholder={
                   form.requestType === "bug"
-                    ? "Explica que intentabas hacer, que paso y si puedes repetir el error."
-                    : "Explica la mejora que propones, por que ayudaria y en que parte del flujo la imaginas."
+                    ? "Explica qué intentabas hacer, qué pasó y si puedes repetir el error."
+                    : "Explica la mejora que propones, por qué ayudaría y en qué parte del flujo la imaginas."
                 }
                 className="min-h-[220px] w-full rounded-[24px] border border-[rgba(67,71,78,0.12)] bg-[var(--surface-container-lowest)] px-4 py-4 text-sm leading-7 text-[var(--on-surface)] outline-none transition focus:border-[var(--primary)]"
                 required
@@ -536,7 +623,7 @@ function SupportPage() {
                     Adjuntos
                   </p>
                   <p className="mt-1 text-sm leading-6 text-[var(--on-surface-variant)]">
-                    Agrega imagenes, archivos PDF o documentos DOCX. No es
+                    Agrega imágenes, archivos PDF o documentos DOCX. No es
                     obligatorio.
                   </p>
                 </div>
@@ -603,7 +690,7 @@ function SupportPage() {
                   })
                 ) : (
                   <div className="rounded-[20px] bg-[var(--surface-container-lowest)] px-4 py-4 text-sm text-[var(--on-surface-variant)]">
-                    Aun no has agregado archivos a este envio.
+                    Aún no has agregado archivos a este envío.
                   </div>
                 )}
               </div>

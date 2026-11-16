@@ -235,7 +235,12 @@ export async function saveSongCategories(categories) {
   const nextCategories = categories
     .map((category) => String(category || '').trim())
     .filter(Boolean)
-    .filter((category, index, collection) => collection.indexOf(category) === index)
+    .reduce((acc, category) => {
+      if (!acc.some((item) => item.toLowerCase() === category.toLowerCase())) {
+        acc.push(category)
+      }
+      return acc
+    }, [])
 
   data.songCategories = nextCategories.length ? nextCategories : defaultSongCategories
   writeData(data)
@@ -359,7 +364,7 @@ function readMockUpdateState() {
     return {
       configured: false,
       available: false,
-      currentVersion: '0.1.0',
+      currentVersion: '0.1.13',
       latestVersion: '',
       title: '',
       releaseNotes: [],
@@ -378,7 +383,7 @@ function writeMockUpdateState(next) {
 }
 
 export async function getAppVersion() {
-  return '0.1.0'
+  return '0.1.13'
 }
 
 export async function getUpdateNoticeManifest() {
@@ -463,10 +468,6 @@ export async function toggleMaximizeMainWindow() {
 
 export async function closeMainWindow() {
   return { ok: true }
-}
-
-export async function openSongFiles() {
-  return { drafts: [] }
 }
 
 export async function importSongDocxBatch() {
@@ -571,7 +572,7 @@ export async function saveSong(payload) {
     playCount: 0,
     fechasUso: existingSong?.fechasUso || [],
     ...payload,
-    chords: '',
+    chords: payload.chords || existingSong?.chords || '',
     id: songId,
     titleNormalized: normalizeTitle(payload.title),
     status: 'published',
@@ -640,6 +641,24 @@ export async function saveSequence(payload) {
   }
 }
 
+function sanitizeExportFileBase(title) {
+  const safe = String(title || '')
+    .trim()
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .replace(/\s+/g, '_')
+    .replace(/^[_.-]+|[_.-]+$/g, '')
+  return safe || 'secuencia'
+}
+
+function buildExportFileName(sequence, withoutNotes = false) {
+  const base = sanitizeExportFileBase(sequence?.title)
+  const idPart = String(sequence?.id || '0000')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .slice(-8) || '0000'
+  const suffix = withoutNotes ? '_sin_notas' : ''
+  return `${base}_${idPart}${suffix}.docx`
+}
+
 export async function deleteSequence(sequenceId) {
   const data = readData()
   const removedSequence = data.sequences.find((sequence) => sequence.id === sequenceId)
@@ -649,9 +668,12 @@ export async function deleteSequence(sequenceId) {
 
   if (removedSequence) {
     const exportKey = `${DATA_KEY}-exports`
-    const fileName = `${(removedSequence.title || 'secuencia').replace(/\s+/g, '_')}.docx`
+    const fileNames = new Set([
+      buildExportFileName(removedSequence, false),
+      buildExportFileName(removedSequence, true),
+    ])
     const existing = JSON.parse(localStorage.getItem(exportKey) || '[]')
-    localStorage.setItem(exportKey, JSON.stringify(existing.filter((item) => item !== fileName)))
+    localStorage.setItem(exportKey, JSON.stringify(existing.filter((item) => !fileNames.has(item))))
   }
 
   return { ok: true }
@@ -668,10 +690,13 @@ export async function deleteSong(songId) {
   return { ok: true }
 }
 
-export async function checkSequenceExportDocx(sequenceId) {
+export async function checkSequenceExportDocx(sequenceId, withoutNotes = false) {
   const data = readData()
   const sequence = data.sequences.find((item) => item.id === sequenceId)
-  const fileName = `${(sequence?.title || 'secuencia').replace(/\s+/g, '_')}.docx`
+  if (!sequence) {
+    throw new Error('No se encontró la secuencia a exportar.')
+  }
+  const fileName = buildExportFileName(sequence, Boolean(withoutNotes))
   const existing = JSON.parse(localStorage.getItem(`${DATA_KEY}-exports`) || '[]')
 
   return {
@@ -686,34 +711,41 @@ export async function getSequenceExportStatuses() {
   const existing = JSON.parse(localStorage.getItem(`${DATA_KEY}-exports`) || '[]')
 
   return data.sequences.map((sequence) => {
-    const fileName = `${(sequence?.title || 'secuencia').replace(/\s+/g, '_')}.docx`
+    const fileName = buildExportFileName(sequence, false)
+    const withoutNotesFileName = buildExportFileName(sequence, true)
     return {
       sequenceId: sequence.id,
       exists: existing.includes(fileName),
       filePath: `exports/${fileName}`,
       fileName,
+      withoutNotesExists: existing.includes(withoutNotesFileName),
+      withoutNotesFilePath: `exports/${withoutNotesFileName}`,
+      withoutNotesFileName,
     }
   })
 }
 
-export async function openExportedSequenceDocx(sequenceId) {
-  const check = await checkSequenceExportDocx(sequenceId)
+export async function openExportedSequenceDocx(sequenceId, withoutNotes = false) {
+  const check = await checkSequenceExportDocx(sequenceId, withoutNotes)
   if (!check.exists) {
-    throw new Error('Todavia no existe un documento exportado para esta secuencia.')
+    throw new Error('Todavía no existe un documento exportado para esta secuencia.')
   }
   return { ok: true }
 }
 
-export async function exportSequenceDocx(sequenceId, overwrite = false) {
+export async function exportSequenceDocx(sequenceId, overwrite = false, withoutNotes = false) {
   const data = readData()
   const sequence = data.sequences.find((item) => item.id === sequenceId)
-  const fileName = `${(sequence?.title || 'secuencia').replace(/\s+/g, '_')}.docx`
+  if (!sequence) {
+    throw new Error('No se encontró la secuencia a exportar.')
+  }
+  const fileName = buildExportFileName(sequence, Boolean(withoutNotes))
   const exportKey = `${DATA_KEY}-exports`
   const existing = JSON.parse(localStorage.getItem(exportKey) || '[]')
   const alreadyExists = existing.includes(fileName)
 
   if (alreadyExists && !overwrite) {
-    throw new Error('El archivo de exportacion ya existe.')
+    throw new Error('El archivo de exportación ya existe.')
   }
 
   if (!alreadyExists) {

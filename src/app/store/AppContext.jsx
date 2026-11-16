@@ -30,6 +30,11 @@ export function AppProvider({ children }) {
   })
   const initializeOnceRef = useRef(false)
   const updateCheckOnceRef = useRef(false)
+  const stateRef = useRef(state)
+
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   useEffect(() => {
     if (initializeOnceRef.current) {
@@ -79,8 +84,8 @@ export function AppProvider({ children }) {
           await wait(220)
           dispatch({
             type: 'bootstrap:success',
-          payload: buildEmptyBootstrap(config, state.songCategories),
-        })
+            payload: buildEmptyBootstrap(config, stateRef.current.songCategories),
+          })
         dispatch({ type: 'startup:done' })
         return
         }
@@ -114,17 +119,19 @@ export function AppProvider({ children }) {
               })
             }
 
-            bootstrap = await service.bootstrapApp(config.workspaceRoot)
-            dispatch({
-              type: 'bootstrap:success',
-              payload: {
-                ...bootstrap,
-                workspaceRoot: config.workspaceRoot,
-                recentRoots: config.recentRoots,
-                preferences: config.preferences,
-                dismissedUpdateVersion: config.dismissedUpdateVersion,
-              },
-            })
+            if ((result?.appliedDownloads || 0) > 0) {
+              bootstrap = await service.bootstrapApp(config.workspaceRoot)
+              dispatch({
+                type: 'bootstrap:success',
+                payload: {
+                  ...bootstrap,
+                  workspaceRoot: config.workspaceRoot,
+                  recentRoots: config.recentRoots,
+                  preferences: config.preferences,
+                  dismissedUpdateVersion: config.dismissedUpdateVersion,
+                },
+              })
+            }
 
             const [refreshedAuthStatus, refreshedSyncStatus] = await Promise.all([
               service.getDriveAuthStatus?.() || Promise.resolve(null),
@@ -239,309 +246,299 @@ export function AppProvider({ children }) {
     }
   }, [state.preferences.themeMode, state.preferences.motionMode])
 
-  async function chooseWorkspace() {
-    const result = await service.selectWorkspaceRoot()
-    const config = await service.getWorkspaceConfig()
-    dispatch({
-      type: 'workspace:selected',
-      payload: {
-        workspaceRoot: result.workspaceRoot,
-        recentRoots: config.recentRoots,
-      },
-    })
-
-    const bootstrap = await service.bootstrapApp(result.workspaceRoot)
-    const songCategories = await service.getSongCategories?.().catch(() => bootstrap.songCategories || [])
-    dispatch({
-      type: 'bootstrap:success',
-      payload: {
-        ...bootstrap,
-        songCategories,
-        workspaceRoot: result.workspaceRoot,
-        recentRoots: config.recentRoots,
-        preferences: config.preferences,
-      },
-    })
-  }
-
-  async function importSongFiles() {
-    const result = await service.openSongFiles()
-    dispatch({ type: 'drafts:set', payload: result.drafts || [] })
-  }
-
-  async function importSongDocxBatch() {
-    return service.importSongDocxBatch()
-  }
-
-  async function saveSongCategories(categories) {
-    const nextCategories = await service.saveSongCategories(categories)
-    dispatch({ type: 'songCategories:set', payload: nextCategories })
-    return nextCategories
-  }
-
-  async function saveMotionMode(motionMode) {
-    const preferences = await service.saveMotionMode(motionMode)
-    dispatch({ type: 'preferences:set', payload: preferences })
-    return preferences
-  }
-
-  async function saveThemeMode(themeMode) {
-    const preferences = await service.saveThemeMode(themeMode)
-    dispatch({ type: 'preferences:set', payload: preferences })
-    return preferences
-  }
-
-  async function saveSong(payload) {
-    const result = await service.saveSong(payload)
-    dispatch({
-      type: 'songs:upsert',
-      payload: {
-        song: result.song,
-        stats: result.stats,
-        draftId: payload.draftId,
-      },
-    })
-    return result
-  }
-
-  async function updateSong(payload) {
-    const result = await service.updateSong(payload)
-    dispatch({
-      type: 'songs:upsert',
-      payload: {
-        song: result.song,
-        stats: result.stats,
-      },
-    })
-    return result
-  }
-
-  async function saveSequence(payload) {
-    const result = await service.saveSequence(payload)
-    dispatch({
-      type: 'sequence:save',
-      payload: {
-        sequence: result.sequence,
-        songs: result.songs,
-        stats: result.stats,
-      },
-    })
-    return result
-  }
-
-  async function deleteSequence(sequenceId) {
-    await service.deleteSequence(sequenceId)
-    dispatch({ type: 'sequence:delete', payload: sequenceId })
-  }
-
-  async function deleteSong(songId) {
-    await service.deleteSong(songId)
-    dispatch({ type: 'songs:delete', payload: songId })
-  }
-
-  async function checkSequenceExport(sequenceId) {
-    return service.checkSequenceExportDocx(sequenceId)
-  }
-
-  async function getSequenceExportStatuses() {
-    return service.getSequenceExportStatuses()
-  }
-
-  async function openExportedSequence(sequenceId) {
-    return service.openExportedSequenceDocx(sequenceId)
-  }
-
-  async function exportSequence(sequenceId, overwrite = false) {
-    const result = await service.exportSequenceDocx(sequenceId, overwrite)
-    dispatch({ type: 'export:done', payload: result })
-    return result
-  }
-
-  async function openExportsFolder() {
-    await service.openExportsFolder()
-  }
-
-  async function refreshSyncStatus() {
-    const [authStatus, syncStatus] = await Promise.all([
-      service.getDriveAuthStatus(),
-      service.getSyncStatus(),
-    ])
-    dispatch({ type: 'driveAuth:set', payload: authStatus })
-    dispatch({ type: 'sync:set', payload: syncStatus })
-    return { authStatus, syncStatus }
-  }
-
-  async function checkForAppUpdate() {
-    dispatch({ type: 'update:set', payload: { checking: true } })
-    try {
-      const result = await service.checkAppUpdate?.()
+  const actions = useMemo(() => {
+    async function chooseWorkspace() {
+      const result = await service.selectWorkspaceRoot()
+      const config = await service.getWorkspaceConfig()
       dispatch({
-        type: 'update:set',
+        type: 'workspace:selected',
         payload: {
-          ...result,
-          checking: false,
-          modalEligible: true,
-          promptVisible:
-            Boolean(result?.available) &&
-            (!result?.dismissedVersion || result.dismissedVersion !== result.latestVersion),
-          lastCheckedAt: new Date().toISOString(),
-        },
-      })
-      return result
-    } catch (error) {
-      dispatch({ type: 'update:set', payload: { checking: false } })
-      throw error
-    }
-  }
-
-  async function dismissUpdate(version) {
-    await service.dismissAppUpdate?.(version)
-    dispatch({
-      type: 'update:set',
-      payload: {
-        dismissedVersion: version,
-        promptVisible: false,
-      },
-    })
-  }
-
-  async function downloadAndInstallUpdate() {
-    dispatch({
-      type: 'update:set',
-      payload: {
-        installing: true,
-        installProgress: {
-          stage: 'starting',
-          percent: 0,
-          detail: 'Preparando actualización...',
-        },
-      },
-    })
-    try {
-      const result = await service.installAppUpdate?.()
-      dispatch({
-        type: 'update:set',
-        payload: {
-          installing: false,
-          available: false,
-          promptVisible: false,
-        },
-      })
-      return result
-    } catch (error) {
-      dispatch({ type: 'update:set', payload: { installing: false } })
-      throw error
-    }
-  }
-
-  async function connectGoogleDrive() {
-    const status = await service.connectGoogleDrive()
-    dispatch({ type: 'driveAuth:set', payload: status })
-    const syncStatus = await service.getSyncStatus()
-    dispatch({ type: 'sync:set', payload: syncStatus })
-    return status
-  }
-
-  async function disconnectGoogleDrive() {
-    const status = await service.disconnectGoogleDrive()
-    dispatch({ type: 'driveAuth:set', payload: status })
-    const syncStatus = await service.getSyncStatus()
-    dispatch({ type: 'sync:set', payload: syncStatus })
-    return status
-  }
-
-  async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
-    dispatch({ type: 'sync:set', payload: { syncing: true } })
-    try {
-      const result = await service.syncWorkspaceNow(reason, mode)
-      dispatch({
-        type: 'sync:set',
-        payload: {
-          ...result,
-          syncing: false,
-          pendingConflicts: result.pendingConflicts || [],
+          workspaceRoot: result.workspaceRoot,
+          recentRoots: config.recentRoots,
         },
       })
 
-      const bootstrap = await service.bootstrapApp(state.workspaceRoot)
+      const bootstrap = await service.bootstrapApp(result.workspaceRoot)
+      const songCategories = await service.getSongCategories?.().catch(() => bootstrap.songCategories || [])
       dispatch({
         type: 'bootstrap:success',
         payload: {
           ...bootstrap,
-          songCategories: bootstrap.songCategories || state.songCategories,
-          workspaceRoot: state.workspaceRoot,
-          recentRoots: state.recentRoots,
-          preferences: state.preferences,
-          activeSongId: state.activeSongId,
-          activeSequenceId: state.activeSequenceId,
+          songCategories,
+          workspaceRoot: result.workspaceRoot,
+          recentRoots: config.recentRoots,
+          preferences: config.preferences,
         },
       })
+    }
 
-      const [authStatus, syncStatus] = await Promise.all([
-        service.getDriveAuthStatus?.() || Promise.resolve(null),
-        service.getSyncStatus?.() || Promise.resolve(null),
-      ])
+    async function importSongDocxBatch() {
+      return service.importSongDocxBatch()
+    }
 
-      if (authStatus) {
-        dispatch({ type: 'driveAuth:set', payload: authStatus })
-      }
-      if (syncStatus) {
-        dispatch({ type: 'sync:set', payload: syncStatus })
-      }
+    async function saveSongCategories(categories) {
+      const nextCategories = await service.saveSongCategories(categories)
+      dispatch({ type: 'songCategories:set', payload: nextCategories })
+      return nextCategories
+    }
 
+    async function saveMotionMode(motionMode) {
+      const preferences = await service.saveMotionMode(motionMode)
+      dispatch({ type: 'preferences:set', payload: preferences })
+      return preferences
+    }
+
+    async function saveThemeMode(themeMode) {
+      const preferences = await service.saveThemeMode(themeMode)
+      dispatch({ type: 'preferences:set', payload: preferences })
+      return preferences
+    }
+
+    async function saveSong(payload) {
+      const result = await service.saveSong(payload)
+      dispatch({
+        type: 'songs:upsert',
+        payload: {
+          song: result.song,
+          stats: result.stats,
+          draftId: payload.draftId,
+        },
+      })
       return result
-    } catch (error) {
-      dispatch({ type: 'sync:set', payload: { syncing: false } })
-      throw error
     }
-  }
 
-  async function resolveSyncConflict(payload) {
-    const result = await service.resolveSyncConflict(payload)
-    dispatch({
-      type: 'sync:set',
-      payload: {
-        ...result,
-        pendingConflicts: result.pendingConflicts || [],
-      },
-    })
-    const bootstrap = await service.bootstrapApp(state.workspaceRoot)
-    dispatch({
-      type: 'bootstrap:success',
-      payload: {
-        ...bootstrap,
-        songCategories: bootstrap.songCategories || state.songCategories,
-        workspaceRoot: state.workspaceRoot,
-        recentRoots: state.recentRoots,
-        preferences: state.preferences,
-        activeSongId: state.activeSongId,
-        activeSequenceId: state.activeSequenceId,
-      },
-    })
-    return result
-  }
-
-  async function exitApplication() {
-    if (service.exitApplication) {
-      return service.exitApplication()
+    async function updateSong(payload) {
+      const result = await service.updateSong(payload)
+      dispatch({
+        type: 'songs:upsert',
+        payload: {
+          song: result.song,
+          stats: result.stats,
+        },
+      })
+      return result
     }
-    return { ok: true }
-  }
 
-  const filteredSongs = useMemo(() => filterSongs(state.songs, state.libraryFilters), [state.songs, state.libraryFilters])
-  const activeSong = useMemo(() => selectActiveSong(state), [state.songs, state.activeSongId])
-  const activeDraft = useMemo(() => selectActiveDraft(state), [state.drafts, state.activeDraftId])
-  const activeSequence = useMemo(() => selectActiveSequence(state), [state.sequences, state.activeSequenceId])
+    async function saveSequence(payload) {
+      const result = await service.saveSequence(payload)
+      dispatch({
+        type: 'sequence:save',
+        payload: {
+          sequence: result.sequence,
+          songs: result.songs,
+          stats: result.stats,
+        },
+      })
+      return result
+    }
 
-  const value = {
-    state,
-    filteredSongs,
-    activeSong,
-    activeDraft,
-    activeSequence,
-    actions: {
+    async function deleteSequence(sequenceId) {
+      await service.deleteSequence(sequenceId)
+      dispatch({ type: 'sequence:delete', payload: sequenceId })
+    }
+
+    async function deleteSong(songId) {
+      await service.deleteSong(songId)
+      dispatch({ type: 'songs:delete', payload: songId })
+    }
+
+    async function checkSequenceExport(sequenceId, withoutNotes = false) {
+      return service.checkSequenceExportDocx(sequenceId, withoutNotes)
+    }
+
+    async function getSequenceExportStatuses() {
+      return service.getSequenceExportStatuses()
+    }
+
+    async function openExportedSequence(sequenceId, withoutNotes = false) {
+      return service.openExportedSequenceDocx(sequenceId, withoutNotes)
+    }
+
+    async function exportSequence(sequenceId, overwrite = false, withoutNotes = false) {
+      const result = await service.exportSequenceDocx(sequenceId, overwrite, withoutNotes)
+      dispatch({ type: 'export:done', payload: result })
+      return result
+    }
+
+    async function openExportsFolder() {
+      await service.openExportsFolder()
+    }
+
+    async function refreshSyncStatus() {
+      const [authStatus, syncStatus] = await Promise.all([
+        service.getDriveAuthStatus(),
+        service.getSyncStatus(),
+      ])
+      dispatch({ type: 'driveAuth:set', payload: authStatus })
+      dispatch({ type: 'sync:set', payload: syncStatus })
+      return { authStatus, syncStatus }
+    }
+
+    async function checkForAppUpdate() {
+      dispatch({ type: 'update:set', payload: { checking: true } })
+      try {
+        const result = await service.checkAppUpdate?.()
+        dispatch({
+          type: 'update:set',
+          payload: {
+            ...result,
+            checking: false,
+            modalEligible: true,
+            promptVisible:
+              Boolean(result?.available) &&
+              (!result?.dismissedVersion || result.dismissedVersion !== result.latestVersion),
+            lastCheckedAt: new Date().toISOString(),
+          },
+        })
+        return result
+      } catch (error) {
+        dispatch({ type: 'update:set', payload: { checking: false } })
+        throw error
+      }
+    }
+
+    async function dismissUpdate(version) {
+      await service.dismissAppUpdate?.(version)
+      dispatch({
+        type: 'update:set',
+        payload: {
+          dismissedVersion: version,
+          promptVisible: false,
+        },
+      })
+    }
+
+    async function downloadAndInstallUpdate() {
+      dispatch({
+        type: 'update:set',
+        payload: {
+          installing: true,
+          installProgress: {
+            stage: 'starting',
+            percent: 0,
+            detail: 'Preparando actualización...',
+          },
+        },
+      })
+      try {
+        const result = await service.installAppUpdate?.()
+        dispatch({
+          type: 'update:set',
+          payload: {
+            installing: false,
+            available: false,
+            promptVisible: false,
+          },
+        })
+        return result
+      } catch (error) {
+        dispatch({ type: 'update:set', payload: { installing: false } })
+        throw error
+      }
+    }
+
+    async function connectGoogleDrive() {
+      const status = await service.connectGoogleDrive()
+      dispatch({ type: 'driveAuth:set', payload: status })
+      const syncStatus = await service.getSyncStatus()
+      dispatch({ type: 'sync:set', payload: syncStatus })
+      return status
+    }
+
+    async function disconnectGoogleDrive() {
+      const status = await service.disconnectGoogleDrive()
+      dispatch({ type: 'driveAuth:set', payload: status })
+      const syncStatus = await service.getSyncStatus()
+      dispatch({ type: 'sync:set', payload: syncStatus })
+      return status
+    }
+
+    async function syncWorkspaceNow(reason = 'manual', mode = 'merge') {
+      dispatch({ type: 'sync:set', payload: { syncing: true } })
+      try {
+        const currentState = stateRef.current
+        const result = await service.syncWorkspaceNow(reason, mode)
+        dispatch({
+          type: 'sync:set',
+          payload: {
+            ...result,
+            syncing: false,
+            pendingConflicts: result.pendingConflicts || [],
+          },
+        })
+
+        if ((result?.appliedDownloads || 0) > 0 || mode === 'pull') {
+          const bootstrap = await service.bootstrapApp(currentState.workspaceRoot)
+          dispatch({
+            type: 'bootstrap:success',
+            payload: {
+              ...bootstrap,
+              songCategories: bootstrap.songCategories || currentState.songCategories,
+              workspaceRoot: currentState.workspaceRoot,
+              recentRoots: currentState.recentRoots,
+              preferences: currentState.preferences,
+              activeSongId: currentState.activeSongId,
+              activeSequenceId: currentState.activeSequenceId,
+            },
+          })
+        }
+
+        const [authStatus, syncStatus] = await Promise.all([
+          service.getDriveAuthStatus?.() || Promise.resolve(null),
+          service.getSyncStatus?.() || Promise.resolve(null),
+        ])
+
+        if (authStatus) {
+          dispatch({ type: 'driveAuth:set', payload: authStatus })
+        }
+        if (syncStatus) {
+          dispatch({ type: 'sync:set', payload: syncStatus })
+        }
+
+        return result
+      } catch (error) {
+        dispatch({ type: 'sync:set', payload: { syncing: false } })
+        throw error
+      }
+    }
+
+    async function resolveSyncConflict(payload) {
+      const currentState = stateRef.current
+      const result = await service.resolveSyncConflict(payload)
+      dispatch({
+        type: 'sync:set',
+        payload: {
+          ...result,
+          pendingConflicts: result.pendingConflicts || [],
+        },
+      })
+      if ((result?.appliedDownloads || 0) > 0) {
+        const bootstrap = await service.bootstrapApp(currentState.workspaceRoot)
+        dispatch({
+          type: 'bootstrap:success',
+          payload: {
+            ...bootstrap,
+            songCategories: bootstrap.songCategories || currentState.songCategories,
+            workspaceRoot: currentState.workspaceRoot,
+            recentRoots: currentState.recentRoots,
+            preferences: currentState.preferences,
+            activeSongId: currentState.activeSongId,
+            activeSequenceId: currentState.activeSequenceId,
+          },
+        })
+      }
+      return result
+    }
+
+    async function exitApplication() {
+      if (service.exitApplication) {
+        return service.exitApplication()
+      }
+      return { ok: true }
+    }
+
+    return {
       chooseWorkspace,
-      importSongFiles,
       importSongDocxBatch,
       saveSongCategories,
       saveMotionMode,
@@ -586,8 +583,34 @@ export function AppProvider({ children }) {
       setUpdatePromptVisible(value) {
         dispatch({ type: 'update:set', payload: { promptVisible: value } })
       },
-    },
-  }
+    }
+  }, [])
+
+  const filteredSongs = useMemo(() => filterSongs(state.songs, state.libraryFilters), [state.songs, state.libraryFilters])
+  const activeSong = useMemo(
+    () => selectActiveSong({ songs: state.songs, activeSongId: state.activeSongId }),
+    [state.songs, state.activeSongId],
+  )
+  const activeDraft = useMemo(
+    () => selectActiveDraft({ drafts: state.drafts, activeDraftId: state.activeDraftId }),
+    [state.drafts, state.activeDraftId],
+  )
+  const activeSequence = useMemo(
+    () => selectActiveSequence({ sequences: state.sequences, activeSequenceId: state.activeSequenceId }),
+    [state.sequences, state.activeSequenceId],
+  )
+
+  const value = useMemo(
+    () => ({
+      state,
+      filteredSongs,
+      activeSong,
+      activeDraft,
+      activeSequence,
+      actions,
+    }),
+    [state, filteredSongs, activeSong, activeDraft, activeSequence, actions],
+  )
 
   return (
     <AppContext.Provider value={value}>

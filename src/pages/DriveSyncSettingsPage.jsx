@@ -16,6 +16,7 @@ function FirstSyncChoiceModal({ open, loading, onCancel, onChoose }) {
   return (
     <ModalShell
       zIndex="z-[230]"
+      onClose={loading ? undefined : onCancel}
       panelClassName="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
     >
         <div className="space-y-3">
@@ -126,7 +127,7 @@ function DriveSyncSettingsPage() {
 
   useEffect(() => {
     actions.refreshSyncStatus().catch(() => {})
-  }, [])
+  }, [actions])
 
   const syncSummary = useMemo(() => {
     if (state.syncStatus.needsInitialSyncChoice) {

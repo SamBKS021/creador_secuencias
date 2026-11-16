@@ -321,48 +321,6 @@ button {
     opacity 120ms ease-out;
 }
 
-:root[data-theme-mode='dark'] [class~='bg-white'],
-:root[data-theme-mode='retro'] [class~='bg-white'] {
-  background-color: var(--surface-container-lowest) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='bg-white/95'],
-:root[data-theme-mode='retro'] [class~='bg-white/95'] {
-  background-color: color-mix(in srgb, var(--surface-container-lowest) 95%, transparent) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='bg-white/70'],
-:root[data-theme-mode='retro'] [class~='bg-white/70'] {
-  background-color: color-mix(in srgb, var(--surface-container-lowest) 70%, transparent) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='hover:bg-white']:hover,
-:root[data-theme-mode='retro'] [class~='hover:bg-white']:hover {
-  background-color: var(--surface-container) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='hover:bg-white/70']:hover,
-:root[data-theme-mode='retro'] [class~='hover:bg-white/70']:hover {
-  background-color: color-mix(in srgb, var(--surface-container) 72%, transparent) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='text-slate-500'],
-:root[data-theme-mode='retro'] [class~='text-slate-500'],
-:root[data-theme-mode='dark'] [class~='text-slate-400'],
-:root[data-theme-mode='retro'] [class~='text-slate-400'] {
-  color: var(--on-surface-variant) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='border-white/40'],
-:root[data-theme-mode='retro'] [class~='border-white/40'] {
-  border-color: color-mix(in srgb, var(--outline-variant) 56%, transparent) !important;
-}
-
-:root[data-theme-mode='dark'] [class~='border-white/60'],
-:root[data-theme-mode='retro'] [class~='border-white/60'] {
-  border-color: color-mix(in srgb, var(--outline-variant) 72%, transparent) !important;
-}
-
 .startup-title {
   animation: startup-title-enter 760ms cubic-bezier(0.22, 1, 0.36, 1);
 }

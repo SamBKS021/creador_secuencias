@@ -28,6 +28,7 @@ pub struct WorkspaceConfig {
     pub locale: String,
     pub preferences: Preferences,
     pub dismissed_update_version: String,
+    pub support_endpoint_url: String,
 }
 
 impl Default for WorkspaceConfig {
@@ -38,6 +39,7 @@ impl Default for WorkspaceConfig {
             locale: "es-MX".into(),
             preferences: Preferences::default(),
             dismissed_update_version: String::new(),
+            support_endpoint_url: String::new(),
         }
     }
 }
@@ -268,8 +270,10 @@ pub struct SupportSubmissionResult {
 #[serde(rename_all = "camelCase")]
 pub struct OAuthLocalConfig {
     pub client_id: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub client_secret: String,
     pub connected_account_email: String,
+    #[serde(default, skip_serializing)]
     pub refresh_token_cache: String,
 }
 
@@ -444,6 +448,9 @@ pub struct SequenceExportStatus {
     pub exists: bool,
     pub file_path: String,
     pub file_name: String,
+    pub without_notes_exists: bool,
+    pub without_notes_file_path: String,
+    pub without_notes_file_name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

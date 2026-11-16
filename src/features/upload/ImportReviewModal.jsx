@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -67,6 +68,23 @@ function ImportReviewModal({
   saving,
   categories,
 }) {
+  useEffect(() => {
+    if (!open || saving) {
+      return undefined;
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, saving, onClose]);
+
   if (!open || !reviewItem) {
     return null;
   }
@@ -79,11 +97,17 @@ function ImportReviewModal({
         type="button"
         aria-label="Cerrar revisión"
         className="absolute inset-0 bg-[rgba(7,20,32,0.52)] backdrop-blur-sm"
-        onClick={onClose}
+        onClick={saving ? undefined : onClose}
       />
 
       <div className="relative z-10 flex h-full w-full items-center justify-center">
-        <div data-blendy-to="import-review" className="app-modal-panel w-full max-w-5xl">
+        <div
+          data-blendy-to="import-review"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Revisión de canto importado"
+          className="app-modal-panel w-full max-w-5xl"
+        >
           <div className="flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[34px] bg-[var(--surface)] p-4 shadow-[0_32px_80px_-36px_rgba(0,24,49,0.6)] sm:max-h-[calc(100vh-3rem)] sm:p-6">
             <div className="mb-4 flex shrink-0 flex-col gap-4 rounded-[28px] bg-[var(--surface-container-high)] px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-3">

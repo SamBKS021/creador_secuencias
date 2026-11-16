@@ -7,6 +7,29 @@ import EditorialCard from "../../components/ui/EditorialCard.jsx";
 import ModalShell from "../../components/ui/ModalShell.jsx";
 import { formatDisplayDate } from "../../utils/formatters.js";
 
+function resolveVisibleExport(exportResult, exportStatus, withoutNotes) {
+  const targetFileName = withoutNotes ? exportStatus?.withoutNotesFileName : exportStatus?.fileName;
+  if (exportResult && (!targetFileName || exportResult.fileName === targetFileName)) {
+    return exportResult;
+  }
+
+  if (withoutNotes && exportStatus?.withoutNotesExists) {
+    return {
+      fileName: exportStatus.withoutNotesFileName,
+      filePath: exportStatus.withoutNotesFilePath,
+    };
+  }
+
+  if (!withoutNotes && exportStatus?.exists) {
+    return {
+      fileName: exportStatus.fileName,
+      filePath: exportStatus.filePath,
+    };
+  }
+
+  return null;
+}
+
 function ExportOverwriteModal({ exportCheck, onCancel, onConfirm, loading }) {
   if (!exportCheck) {
     return null;
@@ -15,6 +38,8 @@ function ExportOverwriteModal({ exportCheck, onCancel, onConfirm, loading }) {
   return (
     <ModalShell
       zIndex="z-[220]"
+      onClose={loading ? undefined : onCancel}
+      ariaLabel="Confirmar reemplazo de documento DOCX"
       panelClassName="w-full max-w-lg rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
     >
         <div className="space-y-3">
@@ -55,6 +80,7 @@ function ExportPanel({
 }) {
   const [exportCheck, setExportCheck] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [withoutNotes, setWithoutNotes] = useState(false);
 
   async function runExport(overwrite = false) {
     setLoading(true);
@@ -67,7 +93,7 @@ function ExportPanel({
     });
 
     try {
-      const result = await onExport(overwrite);
+      const result = await onExport(overwrite, withoutNotes);
       sileo.dismiss(loadingToastId);
       sileo.success({
         title: result?.overwritten ? "Secuencia reemplazada" : "Secuencia exportada",
@@ -91,7 +117,7 @@ function ExportPanel({
     }
 
     try {
-      const existing = await onCheckExisting();
+      const existing = await onCheckExisting(withoutNotes);
       if (existing?.exists) {
         setExportCheck(existing);
         return;
@@ -108,7 +134,7 @@ function ExportPanel({
 
   async function handleOpenDocument() {
     try {
-      await onOpenDocument();
+      await onOpenDocument(withoutNotes);
     } catch (error) {
       sileo.error({
         title: "No se pudo abrir el documento",
@@ -117,7 +143,10 @@ function ExportPanel({
     }
   }
 
-  const visibleExport = exportResult || (exportStatus?.exists ? exportStatus : null);
+  const currentModeExists = withoutNotes
+    ? Boolean(exportStatus?.withoutNotesExists)
+    : Boolean(exportStatus?.exists);
+  const visibleExport = resolveVisibleExport(exportResult, exportStatus, withoutNotes);
 
   return (
     <>
@@ -134,12 +163,28 @@ function ExportPanel({
           </p>
         </div>
 
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+            checked={withoutNotes}
+            disabled={loading}
+            onChange={(event) => setWithoutNotes(event.target.checked)}
+          />
+          <span className="space-y-1">
+            <span className="block font-semibold text-[var(--primary)]">Descargar sin notas</span>
+            <span className="block text-xs leading-5 text-[var(--on-surface-variant)]">
+              Genera el documento solo con títulos, secciones y letra, ocultando acordes y tonalidad (ideal para cantores o congregación).
+            </span>
+          </span>
+        </label>
+
         <div className="flex flex-wrap gap-3">
           <Button onClick={handleExportClick} disabled={disabled || loading}>
             <Download size={16} />
-            Exportar DOCX
+            {withoutNotes ? "Exportar DOCX sin notas" : "Exportar DOCX"}
           </Button>
-          {exportStatus?.exists ? (
+          {currentModeExists || visibleExport ? (
             <Button variant="outline" onClick={handleOpenDocument} disabled={loading}>
               <FaFileWord size={16} />
               Abrir documento

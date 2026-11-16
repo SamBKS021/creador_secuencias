@@ -10,20 +10,20 @@ const options = [
   {
     value: 'normal',
     title: 'Animaciones normales',
-    description: 'Mantiene transiciones completas en paginas, cards y cambios de listas.',
+    description: 'Mantiene transiciones completas en páginas, cards y cambios de listas.',
     note: 'Mejor experiencia visual',
   },
   {
     value: 'reduced',
     title: 'Animaciones reducidas',
-    description: 'Reduce desplazamientos y deja solo transiciones mas cortas y ligeras.',
+    description: 'Reduce desplazamientos y deja solo transiciones más cortas y ligeras.',
     note: 'Buen equilibrio para equipos modestos',
   },
   {
     value: 'off',
     title: 'Animaciones desactivadas',
     description: 'Quita animaciones y transiciones para priorizar respuesta inmediata.',
-    note: 'Minima carga visual',
+    note: 'Mínima carga visual',
   },
 ]
 
@@ -41,12 +41,12 @@ function AnimationSettingsPage() {
       await actions.saveMotionMode(nextMode)
       sileo.success({
         title: 'Preferencia guardada',
-        description: 'El nivel de animaciones se guardo localmente en este equipo.',
+        description: 'El nivel de animaciones se guardó localmente en este equipo.',
       })
     } catch (error) {
       sileo.error({
         title: 'No se pudo guardar la preferencia',
-        description: error?.message || 'Intentalo de nuevo.',
+        description: error?.message || 'Inténtalo de nuevo.',
       })
     }
   }

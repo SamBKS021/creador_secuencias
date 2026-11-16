@@ -1,26 +1,48 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use reqwest::{StatusCode, Url};
 use semver::Version;
 use serde::Deserialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::UpdaterExt;
 
 use crate::drive_auth::access_token_from_refresh;
 use crate::drive_client::load_update_notice_manifest;
 use crate::errors::{AppError, AppResult};
-use crate::models::{AppUpdateStatus, OperationResult, UpdateNoticeManifest};
+use crate::models::{AppUpdateStatus, OperationResult, UpdateInstallProgress, UpdateNoticeManifest};
 use crate::workspace::{ensure_managed_workspace_config, save_config};
 
-fn updater_runtime_config() -> Option<(String, String)> {
-    let endpoint = option_env!("APP_UPDATE_ENDPOINT")
+fn updater_runtime_config(app: &AppHandle) -> Option<(String, String)> {
+    let mut endpoint = option_env!("APP_UPDATE_ENDPOINT")
         .unwrap_or_default()
         .trim()
         .to_string();
-    let public_key = option_env!("TAURI_UPDATER_PUBLIC_KEY")
+    let mut public_key = option_env!("TAURI_UPDATER_PUBLIC_KEY")
         .unwrap_or_default()
         .trim()
         .to_string();
+
+    if endpoint.is_empty() || public_key.is_empty() {
+        if let Ok(config_value) = serde_json::to_value(app.config()) {
+            if endpoint.is_empty() {
+                endpoint = config_value
+                    .pointer("/plugins/updater/endpoints/0")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string();
+            }
+            if public_key.is_empty() {
+                public_key = config_value
+                    .pointer("/plugins/updater/pubkey")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default()
+                    .trim()
+                    .to_string();
+            }
+        }
+    }
 
     if endpoint.is_empty() || public_key.is_empty() {
         return None;
@@ -137,7 +159,7 @@ pub async fn check_app_update(app: &AppHandle) -> AppResult<AppUpdateStatus> {
     let current_version = get_app_version(app);
     let dismissed_version = ensure_managed_workspace_config(app)?.dismissed_update_version;
 
-    let Some((endpoint, public_key)) = updater_runtime_config() else {
+    let Some((endpoint, public_key)) = updater_runtime_config(app) else {
         return Ok(AppUpdateStatus {
             configured: false,
             current_version,
@@ -150,7 +172,13 @@ pub async fn check_app_update(app: &AppHandle) -> AppResult<AppUpdateStatus> {
     let endpoint =
         Url::parse(&endpoint).map_err(|error| AppError::from(error.to_string().as_str()))?;
 
-    let remote = reqwest::Client::new()
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
+        .build()
+        .map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    let remote = client
         .get(endpoint)
         .send()
         .await
@@ -221,7 +249,7 @@ pub async fn check_app_update(app: &AppHandle) -> AppResult<AppUpdateStatus> {
 }
 
 pub async fn install_app_update(app: AppHandle) -> AppResult<OperationResult> {
-    let Some((endpoint, public_key)) = updater_runtime_config() else {
+    let Some((endpoint, public_key)) = updater_runtime_config(&app) else {
         return Err(AppError::from(
             "El updater no está configurado en este build. Falta APP_UPDATE_ENDPOINT o TAURI_UPDATER_PUBLIC_KEY.",
         ));
@@ -229,6 +257,17 @@ pub async fn install_app_update(app: AppHandle) -> AppResult<OperationResult> {
 
     let endpoint =
         Url::parse(&endpoint).map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    let _ = app.emit(
+        "app-update-progress",
+        UpdateInstallProgress {
+            stage: "checking".into(),
+            downloaded: 0,
+            total: 0,
+            percent: 0.0,
+            detail: "Buscando paquete de actualización...".into(),
+        },
+    );
 
     let update = app
         .updater_builder()
@@ -242,8 +281,44 @@ pub async fn install_app_update(app: AppHandle) -> AppResult<OperationResult> {
         .map_err(|error| AppError::from(error.to_string().as_str()))?
         .ok_or_else(|| AppError::from("No hay una actualización pendiente para instalar."))?;
 
+    let mut downloaded: u64 = 0;
+    let progress_app = app.clone();
+    let finish_app = app.clone();
+
     update
-        .download_and_install(|_, _| {}, || {})
+        .download_and_install(
+            move |chunk_length, content_length| {
+                downloaded += chunk_length as u64;
+                let total = content_length.unwrap_or(0);
+                let percent = if total > 0 {
+                    ((downloaded as f32 / total as f32) * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+                let _ = progress_app.emit(
+                    "app-update-progress",
+                    UpdateInstallProgress {
+                        stage: "downloading".into(),
+                        downloaded,
+                        total,
+                        percent,
+                        detail: "Descargando actualización...".into(),
+                    },
+                );
+            },
+            move || {
+                let _ = finish_app.emit(
+                    "app-update-progress",
+                    UpdateInstallProgress {
+                        stage: "installing".into(),
+                        downloaded: 100,
+                        total: 100,
+                        percent: 100.0,
+                        detail: "Instalando actualización...".into(),
+                    },
+                );
+            },
+        )
         .await
         .map_err(|error| AppError::from(error.to_string().as_str()))?;
 

@@ -16,16 +16,16 @@ import PageHeader from "../components/ui/PageHeader.jsx";
 const sections = [
   {
     id: "vision-general",
-    label: "Vision general",
+    label: "Visión general",
     icon: BookOpen,
     eyebrow: "Panorama",
-    title: "Como esta pensada la aplicacion",
+    title: "Cómo está pensada la aplicación",
     summary:
-      "Centro Musical trabaja con un enfoque local-first: tu equipo guarda los datos principales y Google Drive actua como respaldo y sincronizacion.",
+      "Centro Musical trabaja con un enfoque local-first: tu equipo guarda los datos principales y Google Drive actúa como respaldo y sincronización.",
     highlights: [
-      "Los cantos, secuencias y categorias viven en archivos estructurados dentro del almacenamiento administrado por la app.",
+      "Los cantos, secuencias y categorías viven en archivos estructurados dentro del almacenamiento administrado por la app.",
       "Los archivos DOCX se usan para importar o exportar, pero no son la base interna del sistema.",
-      "La app puede seguir funcionando aunque Drive no este disponible en ese momento.",
+      "La app puede seguir funcionando aunque Drive no esté disponible en ese momento.",
     ],
     tips: [
       "Usa Drive como respaldo entre equipos, no como carpeta de trabajo diario.",
@@ -40,16 +40,16 @@ const sections = [
     eyebrow: "Vista principal",
     title: "Panorama del servicio y del repertorio",
     summary:
-      "La pantalla de inicio te da una lectura rapida del estado actual de la biblioteca y de las secuencias proximas.",
+      "La pantalla de inicio te da una lectura rápida del estado actual de la biblioteca y de las secuencias próximas.",
     highlights: [
-      "Resume cuantos cantos y secuencias tienes disponibles.",
-      "Muestra accesos rapidos a las secciones que mas se usan en el flujo diario.",
+      "Resume cuántos cantos y secuencias tienes disponibles.",
+      "Muestra accesos rápidos a las secciones que más se usan en el flujo diario.",
       "Ayuda a detectar si ya tienes preparado el siguiente servicio.",
     ],
     tips: [
-      "Usala como punto de entrada al abrir la app por primera vez en el dia.",
-      "Si una secuencia proxima no aparece, revisa la fecha del servicio.",
-      "Desde aqui puedes saltar rapido a Biblioteca o Secuencias sin recorrer todo el menu.",
+      "Úsala como punto de entrada al abrir la app por primera vez en el día.",
+      "Si una secuencia próxima no aparece, revisa la fecha del servicio.",
+      "Desde aquí puedes saltar rápido a Biblioteca o Secuencias sin recorrer todo el menú.",
     ],
   },
   {
@@ -57,17 +57,17 @@ const sections = [
     label: "Biblioteca de cantos",
     icon: Library,
     eyebrow: "Repertorio",
-    title: "Consulta y edicion de cantos guardados",
+    title: "Consulta y edición de cantos guardados",
     summary:
       "Biblioteca de cantos es la vista para revisar repertorio existente, ajustar metadatos y corregir letra, tono o tempo.",
     highlights: [
-      "Permite buscar por titulo, autor, tonalidad y otros datos del canto.",
+      "Permite buscar por título, autor, tonalidad y otros datos del canto.",
       "Muestra solo los cantos guardados para aprovechar mejor el espacio de trabajo.",
       "Cada canto puede editarse con doble clic o desde los tres puntos de su tarjeta.",
     ],
     tips: [
-      "Usa los filtros para mantenimiento rapido del repertorio, no para construir secuencias.",
-      "Guarda cambios en el modal solo cuando confirmes que el canto quedo correcto.",
+      "Usa los filtros para mantenimiento rápido del repertorio, no para construir secuencias.",
+      "Guarda cambios en el modal solo cuando confirmes que el canto quedó correcto.",
       "Si necesitas dar de alta un canto nuevo, hazlo desde Centro de carga.",
     ],
   },
@@ -78,16 +78,16 @@ const sections = [
     eyebrow: "Altas nuevas",
     title: "Ingreso por documentos o alta manual",
     summary:
-      "Centro de carga concentra la entrada de nuevos cantos. Desde el menu lateral puedes desplegarlo y elegir entre importar documentos o hacer un alta manual.",
+      "Centro de carga concentra la entrada de nuevos cantos. Desde el menú lateral puedes desplegarlo y elegir entre importar documentos o hacer un alta manual.",
     highlights: [
       "Importar documentos abre el flujo para archivos .docx y detecta varios cantos para revisarlos uno por uno.",
-      "Alta manual muestra solo el formulario para crear un canto con titulo, autor, categoria, tonalidad, tempo y letra.",
+      "Alta manual muestra solo el formulario para crear un canto con título, autor, categoría, tonalidad, tempo y letra.",
       "Cuando encuentra coincidencias, te permite usar el existente, sobrescribirlo o guardar uno aparte.",
     ],
     tips: [
-      "Abre Centro de carga desde la sidebar para ver sus dos opciones debajo del menu principal.",
+      "Abre Centro de carga desde la sidebar para ver sus dos opciones debajo del menú principal.",
       "Si importas varios documentos, revisa cada canto con calma antes de confirmar.",
-      "Si una categoria no existe, creala primero desde Ajustes antes de dar de alta el canto.",
+      "Si una categoría no existe, créala primero desde Ajustes antes de dar de alta el canto.",
     ],
   },
   {
@@ -95,18 +95,18 @@ const sections = [
     label: "Secuencias",
     icon: ListMusic,
     eyebrow: "Orden del servicio",
-    title: "Preparacion, reordenamiento y exportacion",
+    title: "Preparación, reordenamiento y exportación",
     summary:
-      "Aqui construyes el flujo del servicio agregando cantos, reordenandolos y preparando el documento final para compartir.",
+      "Aquí construyes el flujo del servicio agregando cantos, reordenándolos y preparando el documento final para compartir.",
     highlights: [
-      "La columna izquierda usa la biblioteca completa y su propia busqueda local.",
+      "La columna izquierda usa la biblioteca completa y su propia búsqueda local.",
       "Puedes arrastrar cantos dentro de la secuencia para cambiar el orden libremente.",
-      "La exportacion genera un DOCX compacto listo para escritorio o impresion.",
+      "La exportación genera un DOCX compacto listo para escritorio o impresión (con o sin notas).",
     ],
     tips: [
       "Guarda la secuencia antes de exportar para no perder cambios recientes.",
       "Si trabajas en varios equipos, sincroniza antes de abrir una secuencia importante.",
-      "Revisa titulo y fecha del servicio antes de compartir el documento final.",
+      "Revisa título y fecha del servicio antes de compartir el documento final.",
     ],
   },
   {
@@ -114,37 +114,37 @@ const sections = [
     label: "Almacenamiento local",
     icon: FolderOpen,
     eyebrow: "Base local",
-    title: "Como guarda la app su informacion",
+    title: "Cómo guarda la app su información",
     summary:
-      "La aplicacion administra su propio espacio de trabajo para reducir errores por mover o borrar carpetas manualmente.",
+      "La aplicación administra su propio espacio de trabajo para reducir errores por mover o borrar carpetas manualmente.",
     highlights: [
       "No necesitas elegir una ruta para empezar a trabajar.",
-      "La estructura interna separa biblioteca, secuencias, categorias, borradores y exportaciones.",
-      "Esto hace mas estable el respaldo y la sincronizacion entre equipos.",
+      "La estructura interna separa biblioteca, secuencias, categorías, borradores y exportaciones.",
+      "Esto hace más estable el respaldo y la sincronización entre equipos.",
     ],
     tips: [
       "Evita modificar a mano los archivos internos si no es necesario.",
-      "Haz respaldo de la app a traves de Drive, no copiando carpetas al azar.",
-      "Si cambias de equipo, usa sincronizacion y no solo copiar documentos exportados.",
+      "Haz respaldo de la app a través de Drive, no copiando carpetas al azar.",
+      "Si cambias de equipo, usa sincronización y no solo copiar documentos exportados.",
     ],
   },
   {
     id: "busqueda",
-    label: "Busqueda y navegacion",
+    label: "Búsqueda y navegación",
     icon: Search,
-    eyebrow: "Movimiento rapido",
-    title: "Donde estan los accesos importantes",
+    eyebrow: "Movimiento rápido",
+    title: "Dónde están los accesos importantes",
     summary:
-      "La barra superior, los menus laterales y esta guia estan pensados para ayudarte a llegar rapido a cada modulo.",
+      "La barra superior, los menús laterales y esta guía están pensados para ayudarte a llegar rápido a cada módulo.",
     highlights: [
       "La barra superior mantiene accesos directos a las vistas principales.",
-      "El icono de ayuda con el signo ? abre esta documentacion integrada en cualquier momento.",
-      "La sidebar concentra la navegacion principal y despliega Centro de carga en Importar documentos y Alta manual.",
+      "El icono de ayuda con el signo ? abre esta documentación integrada en cualquier momento.",
+      "La sidebar concentra la navegación principal y despliega Centro de carga en Importar documentos y Alta manual.",
     ],
     tips: [
-      "Usa Inicio como pivote y la sidebar para saltar entre modulos sin perder contexto.",
+      "Usa Inicio como pivote y la sidebar para saltar entre módulos sin perder contexto.",
       "Si ves una campana activa, revisa Actualizaciones antes de seguir trabajando.",
-      "Cuando necesites reportar algo, entra a Soporte en lugar de mezclarlo con la guia.",
+      "Cuando necesites reportar algo, entra a Soporte en lugar de mezclarlo con la guía.",
     ],
   },
   {
@@ -152,56 +152,56 @@ const sections = [
     label: "Soporte",
     icon: Sparkles,
     eyebrow: "Contacto y seguimiento",
-    title: "Como enviar errores y propuestas de mejora",
+    title: "Cómo enviar errores y propuestas de mejora",
     summary:
-      "La seccion Soporte quedo reservada para contacto operativo. Desde aqui puedes enviar correos al buzon del equipo sin salir de la app, con asunto armado automaticamente segun el tipo de solicitud.",
+      "La sección Soporte quedó reservada para contacto operativo. Desde aquí puedes enviar solicitudes al equipo sin salir de la app, con asunto armado automáticamente según el tipo de solicitud.",
     highlights: [
       "Puedes elegir entre reportar un error o proponer una mejora antes de redactar el mensaje.",
       "El formulario pide tu nombre, una cabecera corta y el detalle completo de lo que quieres enviar; no necesitas escribir el asunto completo a mano.",
-      "Admite imagenes, archivos PDF y documentos DOCX para explicar mejor el caso y los manda junto al correo.",
+      "Admite imágenes, archivos PDF y documentos DOCX para explicar mejor el caso y los manda junto al envío.",
     ],
     tips: [
-      "Si vas a reportar un error, explica que intentabas hacer, que paso y si puedes repetirlo.",
+      "Si vas a reportar un error, explica qué intentabas hacer, qué pasó y si puedes repetirlo.",
       "La cabecera que escribes se usa para completar el asunto final junto con el prefijo [BUG] o [MEJORA] y tu nombre.",
-      "La app agrega la version y la plataforma al final del correo sin mostrartelo en pantalla, asi que tu solo concentrate en describir bien el caso.",
+      "La app agrega la versión y la plataforma automáticamente, así que tú solo concéntrate en describir bien el caso.",
     ],
   },
   {
     id: "ajustes",
     label: "Ajustes",
     icon: Settings,
-    eyebrow: "Configuracion",
-    title: "Modulos de personalizacion y mantenimiento",
+    eyebrow: "Configuración",
+    title: "Módulos de personalización y mantenimiento",
     summary:
-      "Ajustes agrupa los catalogos y preferencias locales del equipo para adaptar la app sin tocar los datos principales del repertorio.",
+      "Ajustes agrupa los catálogos y preferencias locales del equipo para adaptar la app sin tocar los datos principales del repertorio.",
     highlights: [
-      "Categorias administra el catalogo usado en formularios y filtros.",
-      "Drive controla la conexion, el estado y la sincronizacion entre equipos.",
-      "Animaciones y temas ajustan la experiencia visual segun cada computadora.",
+      "Categorías administra el catálogo usado en formularios y filtros.",
+      "Drive controla la conexión, el estado y la sincronización entre equipos.",
+      "Animaciones y temas ajustan la experiencia visual según cada computadora.",
     ],
     tips: [
       "Los temas y animaciones son locales por equipo, no se sincronizan.",
-      "Si cambias una categoria en uso, la app actualiza los cantos asociados.",
+      "Si cambias una categoría en uso, la app actualiza los cantos asociados.",
       "Revisa Ajustes cuando agregues un nuevo equipo al flujo de trabajo.",
     ],
   },
   {
     id: "drive",
-    label: "Sincronizacion con Drive",
+    label: "Sincronización con Drive",
     icon: Sparkles,
     eyebrow: "Respaldo entre equipos",
-    title: "Como mantener varios equipos alineados",
+    title: "Cómo mantener varios equipos alineados",
     summary:
-      "Drive respalda cantos, secuencias y categorias para que puedas continuar el trabajo en otra computadora con la misma cuenta.",
+      "Drive respalda cantos, secuencias y categorías para que puedas continuar el trabajo en otra computadora con la misma cuenta.",
     highlights: [
       "La app sincroniza al iniciar y al cerrar cuando hay una cuenta conectada.",
-      "Tambien puedes forzar una sincronizacion manual desde Ajustes > Drive.",
-      "Si hay conflicto entre equipos, la app te pide decidir que version conservar.",
+      "También puedes forzar una sincronización manual desde Ajustes > Drive.",
+      "Si hay conflicto entre equipos, la app te pide decidir qué versión conservar.",
     ],
     tips: [
       "Antes de cambiar de equipo, sincroniza manualmente para evitar dudas.",
       "Si es la primera vez con una cuenta, elige si deseas subir lo local o traer lo que ya existe en Drive.",
-      "Las categorias tambien forman parte del respaldo, junto con cantos y secuencias.",
+      "Las categorías también forman parte del respaldo, junto con cantos y secuencias.",
     ],
   },
 ];
@@ -217,9 +217,9 @@ function HelpPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Guia"
+        eyebrow="Guía"
         title="Centro de ayuda"
-        description="Consulta que hace cada seccion de la aplicacion, como navegarla desde el boton ? y en que momento conviene usar Soporte para enviar errores o propuestas al equipo."
+        description="Consulta qué hace cada sección de la aplicación, cómo navegarla desde el botón ? y en qué momento conviene usar Soporte para enviar errores o propuestas al equipo."
       />
 
       <div className="grid items-start gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -228,10 +228,10 @@ function HelpPage() {
             <div className="space-y-4">
               <div>
                 <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">
-                  Navegacion interna
+                  Navegación interna
                 </p>
                 <p className="mt-2 text-sm leading-6 text-[var(--on-surface-variant)]">
-                  Elige un tema y el panel de la derecha actualizara su contenido al instante.
+                  Elige un tema y el panel de la derecha actualizará su contenido al instante.
                 </p>
               </div>
 
@@ -287,7 +287,7 @@ function HelpPage() {
             <div className="space-y-4">
               <div>
                 <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
-                  Que puedes hacer aqui
+                  Qué puedes hacer aquí
                 </p>
               </div>
               <div className="space-y-3">
@@ -305,7 +305,7 @@ function HelpPage() {
             <div className="space-y-4">
               <div>
                 <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
-                  Consejos rapidos
+                  Consejos rápidos
                 </p>
               </div>
               <div className="space-y-3">

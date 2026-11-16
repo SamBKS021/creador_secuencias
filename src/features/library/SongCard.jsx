@@ -26,14 +26,23 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
   }, [menuOpen])
 
   return (
-    <button
+    <article
       className={[
-        'motion-card group relative rounded-[24px] bg-[var(--surface-container-lowest)] p-6 text-left editorial-shadow transition hover:-translate-y-1',
+        'motion-card group relative cursor-pointer rounded-[24px] bg-[var(--surface-container-lowest)] p-6 text-left editorial-shadow transition hover:-translate-y-1',
         selected ? 'cta-gradient text-white' : '',
       ].join(' ')}
-      onClick={onSelect}
-      onDoubleClick={onEdit}
-      type="button"
+      onClick={(event) => {
+        if (menuRef.current?.contains(event.target)) {
+          return
+        }
+        onSelect()
+      }}
+      onDoubleClick={(event) => {
+        if (menuRef.current?.contains(event.target)) {
+          return
+        }
+        onEdit()
+      }}
     >
       <span
         className={[
@@ -55,7 +64,18 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
             </span>
 
             <div>
-              <h3 className="font-headline text-3xl font-extrabold leading-tight">{song.title}</h3>
+              <h3 className="font-headline text-3xl font-extrabold leading-tight">
+                <button
+                  type="button"
+                  className="text-left focus:outline-none focus-visible:underline"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    onSelect()
+                  }}
+                >
+                  {song.title}
+                </button>
+              </h3>
               <p className={selected ? 'text-white/80' : 'text-[var(--on-surface-variant)]'}>
                 {song.author || 'Autor sin registrar'}
               </p>
@@ -66,6 +86,8 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
             <button
               type="button"
               aria-label={`Opciones de ${song.title}`}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
               className={[
                 'rounded-full p-2 transition',
                 selected ? 'text-white/80 hover:bg-white/10' : 'text-[var(--outline)] hover:bg-[var(--hover-surface)]',
@@ -81,6 +103,7 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
 
             {menuOpen ? (
               <div
+                role="menu"
                 className="absolute right-0 top-11 z-20 min-w-[190px] rounded-2xl border border-[var(--glass-border)] bg-[var(--surface-container-lowest)] p-2 text-[var(--on-surface)] shadow-[var(--card-shadow)]"
                 onClick={(event) => {
                   event.preventDefault()
@@ -89,6 +112,7 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
               >
                 <button
                   type="button"
+                  role="menuitem"
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[var(--primary)] transition hover:bg-[var(--hover-surface)]"
                   onClick={(event) => {
                     event.preventDefault()
@@ -102,12 +126,13 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
                 </button>
                 <button
                   type="button"
+                  role="menuitem"
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-[var(--error)] transition hover:bg-[rgba(186,26,26,0.08)]"
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
                     setMenuOpen(false)
-                    onDelete(song.id)
+                    onDelete(song)
                   }}
                 >
                   <Trash2 size={16} />
@@ -143,7 +168,7 @@ function SongCard({ song, selected, onSelect, onEdit, onDelete }) {
           </div>
         </div>
       </div>
-    </button>
+    </article>
   )
 }
 

@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::errors::{AppError, AppResult};
 use crate::models::{
-    AppState, Draft, ManifestRecord, OAuthLocalConfig, Preferences, Sequence, Song, Stats, SyncStateRecord,
+    AppState, Draft, ManifestRecord, OAuthLocalConfig, Sequence, Song, Stats, SyncStateRecord,
     WorkspaceConfig,
 };
 
@@ -58,16 +58,32 @@ pub fn managed_workspace_root(app: &AppHandle) -> AppResult<PathBuf> {
     Ok(app_data_dir(app)?.join("workspace"))
 }
 
+pub fn validate_safe_id<'a>(id: &'a str, label: &str) -> AppResult<&'a str> {
+    let trimmed = id.trim();
+    if trimmed.is_empty()
+        || trimmed != id
+        || trimmed == "."
+        || trimmed == ".."
+        || trimmed.contains("..")
+        || trimmed.contains('/')
+        || trimmed.contains('\\')
+        || trimmed.contains(':')
+        || trimmed.contains('\0')
+    {
+        return Err(AppError::from(format!("Identificador de {label} invalido.")));
+    }
+
+    let mut components = Path::new(trimmed).components();
+    match (components.next(), components.next()) {
+        (Some(std::path::Component::Normal(_)), None) => Ok(trimmed),
+        _ => Err(AppError::from(format!("Identificador de {label} invalido."))),
+    }
+}
+
 pub fn load_config(app: &AppHandle) -> AppResult<WorkspaceConfig> {
     let path = config_path(app)?;
     if !path.exists() {
-        return Ok(WorkspaceConfig {
-            workspace_root: String::new(),
-            recent_roots: Vec::new(),
-            locale: "es-MX".into(),
-            preferences: Preferences::default(),
-            dismissed_update_version: String::new(),
-        });
+        return Ok(WorkspaceConfig::default());
     }
 
     Ok(serde_json::from_str(&fs::read_to_string(path)?)?)
@@ -155,14 +171,6 @@ where
 {
     if !path.exists() {
         fs::write(path, serde_json::to_string_pretty(&T::default())?)?;
-    }
-
-    Ok(())
-}
-
-fn ensure_object_file(path: &Path) -> AppResult<()> {
-    if !path.exists() {
-        fs::write(path, "{}")?;
     }
 
     Ok(())
