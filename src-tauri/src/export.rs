@@ -88,7 +88,7 @@ pub fn export_sequence_docx(
     let file = File::create(&output_path)?;
     doc.build()
         .pack(file)
-        .map_err(|error: zip::result::ZipError| AppError::Message(error.to_string()))?;
+        .map_err(|error| AppError::Message(error.to_string()))?;
 
     Ok(output_path)
 }
@@ -698,6 +698,13 @@ fn build_fallback_content(song: &Song) -> SongContentRecord {
 }
 
 fn is_chord_only_text(text: &str) -> bool {
+    if inline_bracket_chord_regex().is_match(text) {
+        let texto_sin_acordes = strip_inline_bracket_chords(text);
+        if !texto_sin_acordes.trim().is_empty() && !is_chord_only_text(&texto_sin_acordes) {
+            return false;
+        }
+    }
+
     let spans = chord_spans(text);
     if spans.is_empty() {
         return false;
@@ -856,7 +863,7 @@ fn sanitize_file_name(value: &str) -> String {
 mod tests {
     use super::{
         build_fallback_content, export_sequence_docx, export_sequence_docx_path_with_options,
-        filter_instruction_for_without_notes, normalize_export_lines, sanitize_file_name,
+        filter_instruction_for_without_notes, is_chord_only_text, normalize_export_lines, sanitize_file_name,
         strip_inline_bracket_chords,
     };
     use crate::models::{Sequence, SequenceItem, Song, SongChord, SongContentRecord, SongLine, SongSection};
@@ -997,6 +1004,13 @@ mod tests {
     }
 
     #[test]
+    fn distingue_acordes_inline_de_letra() {
+        assert!(!is_chord_only_text("[G]Sublime gracia del [C]Señor"));
+        assert!(is_chord_only_text("[G] [C]"));
+        assert!(is_chord_only_text("G [C]"));
+    }
+
+    #[test]
     fn exports_docx_with_and_without_notes() {
         let temp_dir = std::env::temp_dir().join(format!("ccp-export-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&temp_dir).unwrap();
@@ -1029,6 +1043,7 @@ mod tests {
         assert!(document_xml.contains("Sublime gracia del Señor"));
         assert!(!document_xml.contains("Tono:"));
         assert!(!document_xml.contains("[G]"));
+        assert!(!document_xml.contains("[C]"));
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }
