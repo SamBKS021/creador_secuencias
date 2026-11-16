@@ -167,9 +167,10 @@ Las variables mínimas están documentadas en [`.env.example`](./.env.example):
 
 ```env
 GOOGLE_DRIVE_CLIENT_ID=
-GOOGLE_DRIVE_CLIENT_SECRET=
 APP_UPDATE_ENDPOINT=
 TAURI_UPDATER_PUBLIC_KEY=
+SUPPORT_ENDPOINT_URL=
+SUPPORT_TO_EMAIL=
 ```
 
 ### Claves del updater
