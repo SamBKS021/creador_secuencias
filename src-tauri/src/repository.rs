@@ -1,13 +1,15 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
+use regex::Regex;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
-use crate::export::export_sequence_docx_path;
+use crate::export::{export_sequence_docx_path_with_options, legacy_export_sequence_docx_path};
 use crate::importer::normalize_title;
 use crate::models::{
     AppState, BootstrapPayload, Draft, ExportResult, ManifestEntry, ManifestRecord, Sequence, SequenceMutationResult,
@@ -15,8 +17,19 @@ use crate::models::{
     SongSection,
 };
 use crate::workspace::{
-    compute_stats, ensure_workspace, now_iso, read_json, write_json, WorkspacePaths,
+    compute_stats, ensure_workspace, now_iso, read_json, validate_safe_id, write_json, WorkspacePaths,
 };
+
+static CHORD_REGEX: OnceLock<Regex> = OnceLock::new();
+
+fn chord_regex() -> &'static Regex {
+    CHORD_REGEX.get_or_init(|| {
+        Regex::new(
+            r"(?i)([A-G](?:#|b)?(?:maj7|maj|min|m|sus2|sus4|dim|aug|add9|m7|m9|m11|m13|7|9|11|13|6)?(?:/[A-G](?:#|b)?)?)",
+        )
+        .expect("valid chord regex")
+    })
+}
 
 #[derive(Debug, Clone, serde::Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
@@ -93,14 +106,17 @@ pub fn upsert_song(paths: &WorkspacePaths, payload: &SongPayload) -> AppResult<S
     let timestamp = now_iso();
 
     let mut song = payload.song.clone();
-    let existing_song = if song.id.is_empty() {
-        None
+    let (existing_song, existing_content) = if song.id.is_empty() {
+        (None, None)
     } else {
-        let song_dir = paths.library_dir.join(&song.id);
+        let safe_id = validate_safe_id(&song.id, "canto")?;
+        let song_dir = paths.library_dir.join(safe_id);
         if song_dir.exists() {
-            load_song_from_dir(&song_dir).ok()
+            let meta = load_song_from_dir(&song_dir).ok();
+            let content = load_song_content(&song_dir.join("content.json")).ok();
+            (meta, content)
         } else {
-            None
+            (None, None)
         }
     };
 
@@ -135,7 +151,7 @@ pub fn upsert_song(paths: &WorkspacePaths, payload: &SongPayload) -> AppResult<S
         song.status = "published".into();
     }
 
-    let persisted_song = persist_song(paths, &song, payload.content_draft.as_ref())?;
+    let persisted_song = persist_song(paths, &song, payload.content_draft.as_ref(), existing_content.as_ref())?;
 
     if let Some(target_draft_id) = payload.draft_id.as_deref() {
         drafts.retain(|draft| draft.id != target_draft_id);
@@ -154,17 +170,23 @@ pub fn delete_song(paths: &WorkspacePaths, song_id: &str) -> AppResult<()> {
     migrate_legacy_workspace_files(paths)?;
     migrate_legacy_library(paths)?;
 
-    let song_dir = paths.library_dir.join(song_id);
+    let safe_id = validate_safe_id(song_id, "canto")?;
+    let song_dir = paths.library_dir.join(safe_id);
     if song_dir.exists() {
         fs::remove_dir_all(song_dir)?;
     }
 
     let mut sequences = load_sequences(paths)?;
+    let timestamp = now_iso();
     for sequence in &mut sequences {
-        sequence.items.retain(|item| item.song_id != song_id);
+        let before_len = sequence.items.len();
+        sequence.items.retain(|item| item.song_id != safe_id);
+        if sequence.items.len() != before_len {
+            sequence.updated_at = timestamp.clone();
+            persist_sequence_file(paths, sequence)?;
+        }
     }
 
-    save_sequences(paths, &sequences)?;
     Ok(())
 }
 
@@ -176,6 +198,8 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
     let mut sequence = payload.clone();
     if sequence.id.is_empty() {
         sequence.id = Uuid::new_v4().to_string();
+    } else {
+        validate_safe_id(&sequence.id, "secuencia")?;
     }
     if sequence.created_at.is_empty() {
         sequence.created_at = timestamp.clone();
@@ -219,18 +243,29 @@ pub fn upsert_sequence(paths: &WorkspacePaths, payload: &Sequence) -> AppResult<
 
 pub fn delete_sequence(paths: &WorkspacePaths, sequence_id: &str) -> AppResult<()> {
     migrate_legacy_workspace_files(paths)?;
+    let safe_id = validate_safe_id(sequence_id, "secuencia")?;
     let mut sequences = load_sequences(paths)?;
-    let removed_sequence = sequences.iter().find(|sequence| sequence.id == sequence_id).cloned();
-    sequences.retain(|sequence| sequence.id != sequence_id);
-    let sequence_file = paths.sequences_dir.join(format!("{sequence_id}.json"));
+    let removed_sequence = sequences.iter().find(|sequence| sequence.id == safe_id).cloned();
+    sequences.retain(|sequence| sequence.id != safe_id);
+    let sequence_file = paths.sequences_dir.join(format!("{safe_id}.json"));
     if sequence_file.exists() {
         fs::remove_file(sequence_file)?;
     }
 
     if let Some(sequence) = removed_sequence {
-        let export_path = export_sequence_docx_path(&paths.root, &sequence);
-        if export_path.exists() {
-            fs::remove_file(export_path)?;
+        for without_notes in [false, true] {
+            let export_path = export_sequence_docx_path_with_options(&paths.root, &sequence, without_notes);
+            if export_path.exists() {
+                fs::remove_file(export_path)?;
+            }
+        }
+
+        let legacy_path = legacy_export_sequence_docx_path(&paths.root, &sequence);
+        let shares_legacy_name = sequences
+            .iter()
+            .any(|other| legacy_export_sequence_docx_path(&paths.root, other) == legacy_path);
+        if !shares_legacy_name && legacy_path.exists() {
+            fs::remove_file(legacy_path)?;
         }
     }
 
@@ -262,54 +297,91 @@ pub fn load_songs(paths: &WorkspacePaths) -> AppResult<Vec<Song>> {
     migrate_legacy_workspace_files(paths)?;
     migrate_legacy_library(paths)?;
 
-    let mut songs = fs::read_dir(&paths.library_dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.is_dir())
-        .filter_map(|path| load_song_from_dir(&path).ok())
-        .collect::<Vec<_>>();
+    let mut songs = Vec::new();
+    for entry in fs::read_dir(&paths.library_dir)? {
+        let path = entry?.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let song = load_song_from_dir(&path).map_err(|error| {
+            AppError::from(format!(
+                "No se pudo leer el canto en {}: {error}",
+                path.display()
+            ))
+        })?;
+        songs.push(song);
+    }
 
     songs.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+    Ok(songs)
+}
+
+pub fn load_songs_by_ids(paths: &WorkspacePaths, song_ids: &[String]) -> AppResult<Vec<Song>> {
+    migrate_legacy_workspace_files(paths)?;
+    migrate_legacy_library(paths)?;
+
+    let mut seen = HashSet::new();
+    let mut songs = Vec::new();
+    for song_id in song_ids {
+        if song_id.trim().is_empty() || !seen.insert(song_id.clone()) {
+            continue;
+        }
+        let safe_id = validate_safe_id(song_id, "canto")?;
+        let song_dir = paths.library_dir.join(safe_id);
+        if song_dir.exists() && song_dir.is_dir() {
+            let song = load_song_from_dir(&song_dir).map_err(|error| {
+                AppError::from(format!(
+                    "No se pudo leer el canto en {}: {error}",
+                    song_dir.display()
+                ))
+            })?;
+            songs.push(song);
+        }
+    }
+
     Ok(songs)
 }
 
 pub fn load_sequences(paths: &WorkspacePaths) -> AppResult<Vec<Sequence>> {
     migrate_legacy_workspace_files(paths)?;
 
-    let mut sequences = fs::read_dir(&paths.sequences_dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file())
-        .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("json"))
-        .filter(|path| path.file_name().and_then(|value| value.to_str()) != Some("sequences.json"))
-        .filter_map(|path| read_json::<Sequence>(&path).ok())
-        .collect::<Vec<_>>();
+    let mut sequences = Vec::new();
+    for entry in fs::read_dir(&paths.sequences_dir)? {
+        let path = entry?.path();
+        if !path.is_file()
+            || path.extension().and_then(|value| value.to_str()) != Some("json")
+            || path.file_name().and_then(|value| value.to_str()) == Some("sequences.json")
+        {
+            continue;
+        }
+
+        let sequence = read_json::<Sequence>(&path).map_err(|error| {
+            AppError::from(format!(
+                "No se pudo leer la secuencia en {}: {error}",
+                path.display()
+            ))
+        })?;
+        sequences.push(sequence);
+    }
 
     sequences.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
     Ok(sequences)
 }
 
-pub fn save_sequences(paths: &WorkspacePaths, sequences: &[Sequence]) -> AppResult<()> {
-    let existing_files = fs::read_dir(&paths.sequences_dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file())
-        .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("json"))
-        .collect::<Vec<_>>();
-
-    let mut expected_paths = Vec::new();
-    for sequence in sequences {
-        let path = persist_sequence_file(paths, sequence)?;
-        expected_paths.push(path);
+pub fn load_sequence_by_id(paths: &WorkspacePaths, sequence_id: &str) -> AppResult<Sequence> {
+    migrate_legacy_workspace_files(paths)?;
+    let safe_id = validate_safe_id(sequence_id, "secuencia")?;
+    let path = paths.sequences_dir.join(format!("{safe_id}.json"));
+    if !path.exists() {
+        return Err(AppError::from("No se encontro la secuencia solicitada."));
     }
 
-    for file in existing_files {
-        if !expected_paths.iter().any(|path| path == &file) {
-            fs::remove_file(file)?;
-        }
-    }
-
-    Ok(())
+    read_json::<Sequence>(&path).map_err(|error| {
+        AppError::from(format!(
+            "No se pudo leer la secuencia en {}: {error}",
+            path.display()
+        ))
+    })
 }
 
 fn load_song_from_dir(song_dir: &Path) -> AppResult<Song> {
@@ -320,13 +392,20 @@ fn load_song_from_dir(song_dir: &Path) -> AppResult<Song> {
 }
 
 fn persist_sequence_file(paths: &WorkspacePaths, sequence: &Sequence) -> AppResult<PathBuf> {
-    let path = paths.sequences_dir.join(format!("{}.json", sequence.id));
+    let safe_id = validate_safe_id(&sequence.id, "secuencia")?;
+    let path = paths.sequences_dir.join(format!("{safe_id}.json"));
     write_json(&path, sequence)?;
     Ok(path)
 }
 
-fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&SongContentRecord>) -> AppResult<Song> {
-    let song_dir = paths.library_dir.join(&song.id);
+fn persist_song(
+    paths: &WorkspacePaths,
+    song: &Song,
+    content_draft: Option<&SongContentRecord>,
+    existing_content: Option<&SongContentRecord>,
+) -> AppResult<Song> {
+    let safe_id = validate_safe_id(&song.id, "canto")?;
+    let song_dir = paths.library_dir.join(safe_id);
     fs::create_dir_all(&song_dir)?;
 
     let title_normalized = normalize_title(&song.title);
@@ -348,7 +427,7 @@ fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&Song
         updated_at: song.updated_at.clone(),
     };
 
-    let content = resolve_song_content(song, content_draft);
+    let content = resolve_song_content(song, content_draft, existing_content);
 
     write_json(&song_dir.join("meta.json"), &meta)?;
     write_json(&song_dir.join("content.json"), &content)?;
@@ -356,7 +435,11 @@ fn persist_song(paths: &WorkspacePaths, song: &Song, content_draft: Option<&Song
     Ok(build_song_from_records(meta, content))
 }
 
-fn resolve_song_content(song: &Song, content_draft: Option<&SongContentRecord>) -> SongContentRecord {
+fn resolve_song_content(
+    song: &Song,
+    content_draft: Option<&SongContentRecord>,
+    existing_content: Option<&SongContentRecord>,
+) -> SongContentRecord {
     if let Some(draft) = content_draft {
         let flattened_lyrics = flatten_lyrics(draft);
         if normalized_multiline_eq(&flattened_lyrics, &song.lyrics) {
@@ -364,7 +447,45 @@ fn resolve_song_content(song: &Song, content_draft: Option<&SongContentRecord>) 
         }
     }
 
+    if let Some(existing) = existing_content {
+        let flattened_lyrics = flatten_lyrics(existing);
+        if normalized_multiline_eq(&flattened_lyrics, &song.lyrics) {
+            return stabilize_content_ids(existing);
+        }
+
+        let mut rebuilt = build_content_from_flat(&song.lyrics, &song.chords);
+        reconcile_preserved_chords(&mut rebuilt, existing);
+        return stabilize_content_ids(&rebuilt);
+    }
+
     build_content_from_flat(&song.lyrics, &song.chords)
+}
+
+fn reconcile_preserved_chords(target: &mut SongContentRecord, existing: &SongContentRecord) {
+    let mut chords_by_line = HashMap::<String, Vec<SongChord>>::new();
+    for section in &existing.sections {
+        for line in &section.lines {
+            if line.kind == "lyric" && !line.chords.is_empty() && !line.text.trim().is_empty() {
+                chords_by_line
+                    .entry(line.text.trim_end().to_string())
+                    .or_insert_with(|| line.chords.clone());
+            }
+        }
+    }
+
+    if chords_by_line.is_empty() {
+        return;
+    }
+
+    for section in &mut target.sections {
+        for line in &mut section.lines {
+            if line.kind == "lyric" && line.chords.is_empty() {
+                if let Some(preserved) = chords_by_line.get(line.text.trim_end()) {
+                    line.chords = stabilize_chords(preserved, &line.kind, &line.text);
+                }
+            }
+        }
+    }
 }
 
 fn build_song_from_records(meta: SongMetaRecord, content: SongContentRecord) -> Song {
@@ -426,9 +547,14 @@ fn recalcular_fechas_uso_de_cantos(paths: &WorkspacePaths, sequences: &[Sequence
         }
 
         let mut meta: SongMetaRecord = read_json(&meta_path)?;
-        meta.fechas_uso = fechas_por_canto.remove(&meta.id).unwrap_or_default();
-        meta.fechas_uso.sort();
-        write_json(&meta_path, &meta)?;
+        let mut next_fechas = fechas_por_canto.remove(&meta.id).unwrap_or_default();
+        next_fechas.sort();
+
+        if meta.fechas_uso != next_fechas {
+            meta.fechas_uso = next_fechas;
+            meta.updated_at = now_iso();
+            write_json(&meta_path, &meta)?;
+        }
     }
 
     Ok(())
@@ -565,11 +691,13 @@ fn stabilize_chords(chords: &[SongChord], line_kind: &str, text: &str) -> Vec<So
         return chords.to_vec();
     }
 
-    if chords.iter().all(|chord| chord.offset <= limit) {
-        chords.to_vec()
-    } else {
-        Vec::new()
-    }
+    chords
+        .iter()
+        .map(|chord| SongChord {
+            symbol: chord.symbol.clone(),
+            offset: chord.offset.min(limit),
+        })
+        .collect()
 }
 
 fn build_content_from_flat(lyrics: &str, chords: &str) -> SongContentRecord {
@@ -689,7 +817,7 @@ fn render_chord_line(chords: &[SongChord]) -> String {
     let mut line = String::new();
 
     for chord in chords {
-        while line.len() < chord.offset {
+        while line.chars().count() < chord.offset {
             line.push(' ');
         }
         line.push_str(&chord.symbol);
@@ -699,18 +827,13 @@ fn render_chord_line(chords: &[SongChord]) -> String {
 }
 
 fn parse_chords(text: &str) -> Vec<SongChord> {
-    let chord_regex = regex::Regex::new(
-        r"(?i)([A-G](?:#|b)?(?:maj7|maj|min|m|sus2|sus4|dim|aug|add9|m7|m9|m11|m13|7|9|11|13|6)?(?:/[A-G](?:#|b)?)?)",
-    )
-    .expect("valid chord regex");
-
-    chord_regex
+    chord_regex()
         .captures_iter(text)
         .filter_map(|captures| captures.get(1))
         .filter(|matched| has_valid_chord_boundaries(text, matched.start(), matched.end()))
         .map(|matched| SongChord {
             symbol: matched.as_str().to_string(),
-            offset: matched.start(),
+            offset: text[..matched.start()].chars().count(),
         })
         .collect()
 }
@@ -788,7 +911,7 @@ fn migrate_legacy_library(paths: &WorkspacePaths) -> AppResult<()> {
     }
 
     for song in &legacy_songs {
-        persist_song(paths, song, None)?;
+        persist_song(paths, song, None, None)?;
     }
 
     sync_next_song_id(paths, &legacy_songs)?;
@@ -999,4 +1122,146 @@ fn build_manifest_entry(
         entity_type,
         entity_id,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{delete_sequence, delete_song, load_songs, parse_chords, upsert_sequence, upsert_song};
+    use crate::export::export_sequence_docx;
+    use crate::models::{Sequence, SequenceItem, Song, SongChord, SongContentRecord, SongLine, SongPayload, SongSection};
+    use crate::workspace::ensure_workspace;
+
+    #[test]
+    fn rejects_path_traversal_in_song_and_sequence_ids() {
+        let root = std::env::temp_dir().join(format!("ccp-repo-sec-{}", uuid::Uuid::new_v4()));
+        let paths = ensure_workspace(&root).unwrap();
+
+        assert!(delete_song(&paths, "../outside").is_err());
+        assert!(delete_sequence(&paths, "../../etc").is_err());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn preserves_inline_lyric_chords_when_updating_song_metadata() {
+        let root = std::env::temp_dir().join(format!("ccp-repo-chords-{}", uuid::Uuid::new_v4()));
+        let paths = ensure_workspace(&root).unwrap();
+
+        let draft = SongContentRecord {
+            version: 1,
+            sections: vec![SongSection {
+                id: "s1".into(),
+                section_type: "verse".into(),
+                label: "VERSO 1".into(),
+                lines: vec![SongLine {
+                    id: "l1".into(),
+                    kind: "lyric".into(),
+                    text: "¿Quién sino el Señor?".into(),
+                    chords: vec![SongChord {
+                        symbol: "Gm".into(),
+                        offset: 0,
+                    }],
+                }],
+            }],
+        };
+
+        let created = upsert_song(
+            &paths,
+            &SongPayload {
+                song: Song {
+                    title: "Dios Poderoso".into(),
+                    lyrics: "VERSO 1\n¿Quién sino el Señor?".into(),
+                    ..Song::default()
+                },
+                draft_id: None,
+                content_draft: Some(draft),
+            },
+        )
+        .unwrap();
+
+        let updated = upsert_song(
+            &paths,
+            &SongPayload {
+                song: Song {
+                    id: created.song.id.clone(),
+                    title: "Dios Poderoso (Editado)".into(),
+                    lyrics: created.song.lyrics.clone(),
+                    ..Song::default()
+                },
+                draft_id: None,
+                content_draft: None,
+            },
+        )
+        .unwrap();
+
+        assert!(updated.song.chords.contains("Gm"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn delete_sequence_removes_both_docx_variants_without_affecting_homonym() {
+        let root = std::env::temp_dir().join(format!("ccp-repo-delseq-{}", uuid::Uuid::new_v4()));
+        let paths = ensure_workspace(&root).unwrap();
+
+        let seq_a = upsert_sequence(
+            &paths,
+            &Sequence {
+                title: "Adoración".into(),
+                service_date: "2026-04-05".into(),
+                items: Vec::<SequenceItem>::new(),
+                ..Sequence::default()
+            },
+        )
+        .unwrap()
+        .sequence;
+
+        let seq_b = upsert_sequence(
+            &paths,
+            &Sequence {
+                title: "Adoración".into(),
+                service_date: "2026-04-12".into(),
+                items: Vec::<SequenceItem>::new(),
+                ..Sequence::default()
+            },
+        )
+        .unwrap()
+        .sequence;
+
+        let a_normal = export_sequence_docx(&root, &seq_a, &[], false).unwrap();
+        let a_clean = export_sequence_docx(&root, &seq_a, &[], true).unwrap();
+        let b_normal = export_sequence_docx(&root, &seq_b, &[], false).unwrap();
+
+        assert!(a_normal.exists());
+        assert!(a_clean.exists());
+        assert!(b_normal.exists());
+
+        delete_sequence(&paths, &seq_a.id).unwrap();
+
+        assert!(!a_normal.exists());
+        assert!(!a_clean.exists());
+        assert!(b_normal.exists());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn errors_on_corrupt_song_json_instead_of_ignoring() {
+        let root = std::env::temp_dir().join(format!("ccp-repo-corrupt-{}", uuid::Uuid::new_v4()));
+        let paths = ensure_workspace(&root).unwrap();
+        let bad_dir = paths.library_dir.join("canto-9999");
+        std::fs::create_dir_all(&bad_dir).unwrap();
+        std::fs::write(bad_dir.join("meta.json"), "{not-valid-json").unwrap();
+        std::fs::write(bad_dir.join("content.json"), "{}").unwrap();
+
+        assert!(load_songs(&paths).is_err());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn parse_chords_uses_char_offsets() {
+        let chords = parse_chords("¿Quién   G   ñá   Em");
+        assert_eq!(chords[0].offset, 9);
+        assert_eq!(chords[1].offset, 18);
+    }
 }

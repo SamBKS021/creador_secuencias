@@ -98,15 +98,29 @@ function DashboardPage() {
             <p className="font-headline text-xs font-bold uppercase tracking-[0.24em] text-[var(--outline)]">
               Archivos recientes
             </p>
-            {state.stats.recentUploads.slice(0, 2).map((song) => (
-              <div
-                key={song.id}
-                className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] p-4"
-              >
-                <Upload size={16} className="text-[var(--primary)]" />
-                <span className="text-sm text-[var(--on-surface-variant)]">{song.sourceFileName}</span>
-              </div>
-            ))}
+            {(() => {
+              const recentFiles = state.stats.recentUploads
+                .filter((song) => Boolean(String(song.sourceFileName || "").trim()))
+                .slice(0, 2);
+
+              if (!recentFiles.length) {
+                return (
+                  <div className="rounded-2xl bg-[var(--surface-container-low)] p-4 text-sm text-[var(--on-surface-variant)]">
+                    Aún no hay archivos .docx importados recientemente.
+                  </div>
+                );
+              }
+
+              return recentFiles.map((song) => (
+                <div
+                  key={song.id}
+                  className="flex items-center gap-3 rounded-2xl bg-[var(--surface-container-low)] p-4"
+                >
+                  <Upload size={16} className="shrink-0 text-[var(--primary)]" />
+                  <span className="truncate text-sm text-[var(--on-surface-variant)]">{song.sourceFileName}</span>
+                </div>
+              ));
+            })()}
           </EditorialCard>
         </div>
       </section>

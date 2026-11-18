@@ -70,6 +70,7 @@ function SideNav() {
             <div className="space-y-1 overflow-hidden">
               <button
                 type="button"
+                aria-expanded={showUploadItems}
                 className={[
                   "group relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 font-headline text-sm font-semibold transition-all duration-300 ease-out",
                   "before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r-full before:bg-[var(--primary)] before:transition-all before:duration-300 before:ease-out",

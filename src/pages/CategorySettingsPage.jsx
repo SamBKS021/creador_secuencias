@@ -68,11 +68,18 @@ function CategorySettingsPage() {
     try {
       if (editingName) {
         const affectedSongs = state.songs.filter((song) => song.category === editingName);
-        for (const song of affectedSongs) {
-          await actions.updateSong({
-            ...song,
-            category: nextName,
-          });
+        const results = await Promise.allSettled(
+          affectedSongs.map((song) =>
+            actions.updateSong({
+              ...song,
+              category: nextName,
+            }),
+          ),
+        );
+
+        const failedCount = results.filter((result) => result.status === "rejected").length;
+        if (affectedSongs.length > 0 && failedCount === affectedSongs.length) {
+          throw new Error("No se pudo actualizar la categoría en ninguno de los cantos asociados.");
         }
 
         await actions.saveSongCategories(categories.map((category) => (category === editingName ? nextName : category)));
@@ -81,12 +88,19 @@ function CategorySettingsPage() {
           actions.setLibraryFilters({ category: nextName });
         }
 
-        sileo.success({
-          title: "Categoría actualizada",
-          description: affectedSongs.length
-            ? `La categoría se actualizó en el catálogo y en ${affectedSongs.length} canto(s).`
-            : "La categoría se actualizó correctamente.",
-        });
+        if (failedCount > 0) {
+          sileo.warning({
+            title: "Categoría actualizada con advertencias",
+            description: `Se actualizó el catálogo, pero ${failedCount} de ${affectedSongs.length} canto(s) no pudieron actualizarse.`,
+          });
+        } else {
+          sileo.success({
+            title: "Categoría actualizada",
+            description: affectedSongs.length
+              ? `La categoría se actualizó en el catálogo y en ${affectedSongs.length} canto(s).`
+              : "La categoría se actualizó correctamente.",
+          });
+        }
       } else {
         await actions.saveSongCategories([...categories, nextName]);
         sileo.success({

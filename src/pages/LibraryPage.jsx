@@ -68,24 +68,47 @@ function Pagination({ page, totalPages, onChange }) {
   )
 }
 
-function SongEditModal({ open, form, categories, hasPendingChanges, onChange, onSubmit, onClose }) {
-  useEffect(() => {
-    if (!open) {
-      return undefined
-    }
+function ConfirmDeleteSongModal({ song, loading, onCancel, onConfirm }) {
+  if (!song) {
+    return null
+  }
 
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
+  return (
+    <ModalShell
+      zIndex="z-[220]"
+      onClose={loading ? undefined : onCancel}
+      ariaLabel="Confirmar eliminación de canto"
+      panelClassName="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
+    >
+      <div className="space-y-3">
+        <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--error)]">
+          Eliminar canto
+        </p>
+        <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
+          ¿Seguro que deseas eliminar este canto?
+        </h3>
+        <p className="text-sm leading-6 text-[var(--on-surface-variant)]">
+          Se eliminará <strong>{song.title || 'este canto'}</strong> de la biblioteca y de todas las secuencias donde aparezca.
+        </p>
+      </div>
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [onClose, open])
+      <div className="mt-6 flex justify-end gap-3">
+        <Button variant="outline" onClick={onCancel} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={loading}
+          className="bg-[var(--error)] text-white hover:opacity-90"
+        >
+          {loading ? 'Eliminando...' : 'Sí, eliminar'}
+        </Button>
+      </div>
+    </ModalShell>
+  )
+}
 
+function SongEditModal({ open, form, categories, hasPendingChanges, saving, onChange, onSubmit, onClose }) {
   if (!open || !form.id) {
     return null
   }
@@ -94,13 +117,15 @@ function SongEditModal({ open, form, categories, hasPendingChanges, onChange, on
     <ModalShell
       className="overflow-y-auto py-6"
       panelClassName="relative w-full max-w-[min(1720px,calc(100vw-32px))]"
-      onClose={onClose}
+      onClose={saving ? undefined : onClose}
+      ariaLabel={`Editar canto ${form.title || ''}`}
     >
       <button
         type="button"
         aria-label="Cerrar editor"
         className="absolute right-4 top-4 z-10 rounded-full p-2 text-[var(--outline)] transition hover:bg-[var(--hover-surface)] hover:text-[var(--primary)]"
         onClick={onClose}
+        disabled={saving}
       >
         <X size={20} />
       </button>
@@ -112,8 +137,8 @@ function SongEditModal({ open, form, categories, hasPendingChanges, onChange, on
         categories={categories}
         onChange={onChange}
         onSubmit={onSubmit}
-        submitLabel="Guardar cambios"
-        submitDisabled={!hasPendingChanges}
+        submitLabel={saving ? 'Guardando...' : 'Guardar cambios'}
+        submitDisabled={!hasPendingChanges || saving}
         sideContent={<SongUsageChart fechasUso={form.fechasUso} />}
       />
     </ModalShell>
@@ -125,13 +150,15 @@ function LibraryPage() {
   const [form, setForm] = useState(activeSong)
   const [page, setPage] = useState(1)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [songPendingDelete, setSongPendingDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   useLayoutEffect(() => {
-    setForm({
-      ...activeSong,
-      chords: '',
-    })
-  }, [activeSong])
+    if (!editorOpen) {
+      setForm({ ...activeSong })
+    }
+  }, [activeSong, editorOpen])
 
   useEffect(() => {
     setPage(1)
@@ -160,27 +187,70 @@ function LibraryPage() {
 
   function abrirEditorDeCanto(song) {
     actions.setActiveSong(song.id)
-    setForm({
-      ...song,
-      chords: '',
-    })
+    setForm({ ...song })
     setEditorOpen(true)
   }
 
   function cerrarEditorDeCanto() {
+    if (saving) {
+      return
+    }
     setEditorOpen(false)
   }
 
   async function guardarCambiosDeCanto() {
-    if (!hasPendingChanges) {
+    if (!hasPendingChanges || saving) {
       return
     }
 
-    await actions.updateSong(form)
-    sileo.success({
-      title: 'Canto actualizado',
-      description: `${form.title || 'El canto'} quedó actualizado en la biblioteca.`,
-    })
+    if (!String(form.title || '').trim()) {
+      sileo.warning({
+        title: 'Falta el título',
+        description: 'Escribe un título para el canto antes de guardar los cambios.',
+      })
+      return
+    }
+
+    setSaving(true)
+    try {
+      await actions.updateSong(form)
+      sileo.success({
+        title: 'Canto actualizado',
+        description: `${form.title || 'El canto'} quedó actualizado en la biblioteca.`,
+      })
+      setEditorOpen(false)
+    } catch (error) {
+      sileo.error({
+        title: 'No se pudo actualizar el canto',
+        description: error?.message || 'Revisa los datos del canto e inténtalo de nuevo.',
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function confirmarEliminacionDeCanto() {
+    const songId = typeof songPendingDelete === 'string' ? songPendingDelete : songPendingDelete?.id
+    if (!songId || deleting) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      await actions.deleteSong(songId)
+      sileo.success({
+        title: 'Canto eliminado',
+        description: `${songPendingDelete?.title || 'El canto'} fue eliminado de la biblioteca.`,
+      })
+      setSongPendingDelete(null)
+    } catch (error) {
+      sileo.error({
+        title: 'No se pudo eliminar el canto',
+        description: error?.message || 'Inténtalo de nuevo en unos momentos.',
+      })
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (!state.workspaceRoot) {
@@ -212,7 +282,7 @@ function LibraryPage() {
                 selected={song.id === activeSong.id}
                 onSelect={() => actions.setActiveSong(song.id)}
                 onEdit={() => abrirEditorDeCanto(song)}
-                onDelete={actions.deleteSong}
+                onDelete={(target) => setSongPendingDelete(typeof target === 'string' ? song : target)}
               />
             ))}
           </div>
@@ -232,9 +302,17 @@ function LibraryPage() {
         form={form}
         categories={songCategories}
         hasPendingChanges={hasPendingChanges}
+        saving={saving}
         onChange={setForm}
         onSubmit={guardarCambiosDeCanto}
         onClose={cerrarEditorDeCanto}
+      />
+
+      <ConfirmDeleteSongModal
+        song={songPendingDelete}
+        loading={deleting}
+        onCancel={() => setSongPendingDelete(null)}
+        onConfirm={confirmarEliminacionDeCanto}
       />
     </div>
   )

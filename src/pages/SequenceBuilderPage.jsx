@@ -7,12 +7,63 @@ import { useAppContext } from '../app/store/AppContext.jsx'
 import Button from '../components/ui/Button.jsx'
 import EditorialCard from '../components/ui/EditorialCard.jsx'
 import EmptyState from '../components/ui/EmptyState.jsx'
+import ModalShell from '../components/ui/ModalShell.jsx'
 import PageHeader from '../components/ui/PageHeader.jsx'
 import ExportPanel from '../features/sequence-builder/ExportPanel.jsx'
 import SequenceList from '../features/sequence-builder/SequenceList.jsx'
 import { createEmptySequence, generateSequenceMetrics } from '../utils/workspace.js'
 
 const PAGE_SIZE = 6
+let fallbackItemCounter = 0
+
+function createSequenceItemId(songId) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `item-${crypto.randomUUID()}`
+  }
+
+  fallbackItemCounter += 1
+  return `item-${Date.now()}-${fallbackItemCounter}-${songId}`
+}
+
+function ConfirmDeleteSequenceModal({ open, sequenceTitle, loading, onCancel, onConfirm }) {
+  if (!open) {
+    return null
+  }
+
+  return (
+    <ModalShell
+      zIndex="z-[220]"
+      onClose={loading ? undefined : onCancel}
+      ariaLabel="Confirmar eliminación de secuencia"
+      panelClassName="w-full max-w-md rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--modal-shadow)]"
+    >
+      <div className="space-y-3">
+        <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--error)]">
+          Eliminar secuencia
+        </p>
+        <h3 className="font-headline text-2xl font-extrabold text-[var(--primary)]">
+          ¿Seguro que deseas eliminar esta secuencia?
+        </h3>
+        <p className="text-sm leading-6 text-[var(--on-surface-variant)]">
+          Se eliminará <strong>{sequenceTitle || 'esta secuencia'}</strong> y sus documentos DOCX exportados en este equipo.
+        </p>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-3">
+        <Button variant="outline" onClick={onCancel} disabled={loading}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={onConfirm}
+          disabled={loading}
+          className="bg-[var(--error)] text-white hover:opacity-90"
+        >
+          {loading ? 'Eliminando...' : 'Sí, eliminar'}
+        </Button>
+      </div>
+    </ModalShell>
+  )
+}
 
 function CompactPagination({ page, totalPages, onChange, label = 'Página' }) {
   if (totalPages <= 1) {
@@ -57,11 +108,14 @@ function SequenceBuilderPage() {
   const [libraryPage, setLibraryPage] = useState(1)
   const [sequencePage, setSequencePage] = useState(1)
   const [exportStatus, setExportStatus] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   useEffect(() => {
     setSequence(activeSequence)
     actions.clearExportResult()
-  }, [activeSequence])
+  }, [activeSequence, actions])
 
   useEffect(() => {
     let cancelled = false
@@ -75,9 +129,19 @@ function SequenceBuilderPage() {
       }
 
       try {
-        const status = await actions.checkSequenceExport(activeSequence.id)
+        const [normalStatus, cleanStatus] = await Promise.all([
+          actions.checkSequenceExport(activeSequence.id, false),
+          actions.checkSequenceExport(activeSequence.id, true),
+        ])
         if (!cancelled) {
-          setExportStatus(status)
+          setExportStatus({
+            exists: Boolean(normalStatus?.exists),
+            filePath: normalStatus?.filePath || '',
+            fileName: normalStatus?.fileName || '',
+            withoutNotesExists: Boolean(cleanStatus?.exists),
+            withoutNotesFilePath: cleanStatus?.filePath || '',
+            withoutNotesFileName: cleanStatus?.fileName || '',
+          })
         }
       } catch {
         if (!cancelled) {
@@ -91,7 +155,7 @@ function SequenceBuilderPage() {
     return () => {
       cancelled = true
     }
-  }, [activeSequence?.id])
+  }, [activeSequence?.id, actions])
 
   const sequenceMetrics = generateSequenceMetrics(sequence, state.songs)
 
@@ -144,19 +208,28 @@ function SequenceBuilderPage() {
 
   function addSong(songId) {
     actions.clearExportResult()
+    const nextTotalPages = Math.max(1, Math.ceil((sequence.items.length + 1) / PAGE_SIZE))
     setSequence((current) => ({
       ...current,
       items: [
         ...current.items,
         {
-          id: `item-${Date.now()}-${songId}`,
+          id: createSequenceItemId(songId),
           songId,
           order: current.items.length + 1,
           transitionType: current.items.length ? 'Crossfade' : 'Entrada suave',
         },
       ],
     }))
-    setSequencePage(sequenceTotalPages)
+    setSequencePage(nextTotalPages)
+  }
+
+  function changeTransition(itemId, transitionType) {
+    actions.clearExportResult()
+    setSequence((current) => ({
+      ...current,
+      items: current.items.map((item) => (item.id === itemId ? { ...item, transitionType } : item)),
+    }))
   }
 
   function removeSong(itemId) {
@@ -218,6 +291,10 @@ function SequenceBuilderPage() {
   }
 
   async function persistSequence() {
+    if (!String(sequence.title || '').trim()) {
+      throw new Error('Escribe un título para la secuencia antes de guardarla.')
+    }
+
     const result = await actions.saveSequence(sequence)
     if (result?.sequence) {
       setSequence(result.sequence)
@@ -227,26 +304,54 @@ function SequenceBuilderPage() {
   }
 
   async function handleSaveSequence() {
-    await persistSequence()
+    if (saving) {
+      return
+    }
+
+    if (!String(sequence.title || '').trim()) {
+      sileo.warning({
+        title: 'Falta el título',
+        description: 'Escribe un título para la secuencia antes de guardarla.',
+      })
+      return
+    }
+
+    setSaving(true)
+    try {
+      const saved = await persistSequence()
+      sileo.success({
+        title: 'Secuencia guardada',
+        description: `${saved.title || 'La secuencia'} quedó guardada correctamente.`,
+      })
+    } catch (error) {
+      sileo.error({
+        title: 'No se pudo guardar la secuencia',
+        description: error?.message || 'Revisa los datos de la secuencia e inténtalo de nuevo.',
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
-  async function handleOpenDocument() {
+  async function handleOpenDocument(withoutNotes = false) {
     const sequenceId = sequence.id || activeSequence?.id
     if (!sequenceId) {
       return
     }
 
-    await actions.openExportedSequence(sequenceId)
+    await actions.openExportedSequence(sequenceId, withoutNotes)
   }
 
-  async function handleDeleteSequence() {
-    if (!sequence.id) {
+  async function handleConfirmDeleteSequence() {
+    if (!sequence.id || deleting) {
       return
     }
 
+    setDeleting(true)
     try {
       await actions.deleteSequence(sequence.id)
       actions.clearExportResult()
+      setDeleteModalOpen(false)
       sileo.success({
         title: 'Secuencia eliminada',
         description: 'La secuencia fue eliminada correctamente.',
@@ -257,6 +362,8 @@ function SequenceBuilderPage() {
         title: 'No se pudo eliminar la secuencia',
         description: error?.message || 'Repite la acción en unos segundos.',
       })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -282,9 +389,9 @@ function SequenceBuilderPage() {
               <Plus size={16} />
               Nueva secuencia
             </Button>
-            <Button className="whitespace-nowrap" onClick={handleSaveSequence}>
+            <Button className="whitespace-nowrap" onClick={handleSaveSequence} disabled={saving || deleting}>
               <Save size={16} />
-              Guardar secuencia
+              {saving ? 'Guardando...' : 'Guardar secuencia'}
             </Button>
           </>
         }
@@ -361,12 +468,28 @@ function SequenceBuilderPage() {
               </div>
 
               {sequence.id ? (
-                <Button variant="outline" onClick={handleDeleteSequence}>
+                <Button variant="outline" onClick={() => setDeleteModalOpen(true)} disabled={saving || deleting}>
                   <Trash2 size={16} />
                   Eliminar
                 </Button>
               ) : null}
             </div>
+
+            <label className="block space-y-2">
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">
+                Notas del servicio
+              </span>
+              <textarea
+                rows={2}
+                className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 text-sm outline-none"
+                placeholder="Indicaciones generales para el equipo (opcional)..."
+                value={sequence.notes || ''}
+                onChange={(event) => {
+                  actions.clearExportResult()
+                  setSequence({ ...sequence, notes: event.target.value })
+                }}
+              />
+            </label>
 
             {sequence.items.length ? (
               <div className="space-y-4">
@@ -378,6 +501,7 @@ function SequenceBuilderPage() {
                   onDragEnd={handleDragEnd}
                   onRemove={removeSong}
                   onMove={moveSong}
+                  onChangeTransition={changeTransition}
                 />
                 <CompactPagination page={sequencePage} totalPages={sequenceTotalPages} onChange={setSequencePage} label="Bloque" />
               </div>
@@ -411,20 +535,52 @@ function SequenceBuilderPage() {
           <ExportPanel
             exportResult={state.exportResult}
             exportStatus={exportStatus}
-            onCheckExisting={async () => {
+            onCheckExisting={async (withoutNotes = false) => {
               const savedSequence = await persistSequence()
-              const status = await actions.checkSequenceExport(savedSequence.id)
-              setExportStatus(status)
+              const status = await actions.checkSequenceExport(savedSequence.id, withoutNotes)
+              setExportStatus((current) => ({
+                exists: current?.exists || false,
+                fileName: current?.fileName || '',
+                filePath: current?.filePath || '',
+                withoutNotesExists: current?.withoutNotesExists || false,
+                withoutNotesFileName: current?.withoutNotesFileName || '',
+                withoutNotesFilePath: current?.withoutNotesFilePath || '',
+                ...(withoutNotes
+                  ? {
+                      withoutNotesExists: Boolean(status?.exists),
+                      withoutNotesFileName: status?.fileName || '',
+                      withoutNotesFilePath: status?.filePath || '',
+                    }
+                  : {
+                      exists: Boolean(status?.exists),
+                      fileName: status?.fileName || '',
+                      filePath: status?.filePath || '',
+                    }),
+              }))
               return status
             }}
-            onExport={async (overwrite) => {
+            onExport={async (overwrite, withoutNotes = false) => {
               const savedSequence = await persistSequence()
-              const result = await actions.exportSequence(savedSequence.id, overwrite)
-              setExportStatus({
-                exists: true,
-                fileName: result.fileName,
-                filePath: result.filePath,
-              })
+              const result = await actions.exportSequence(savedSequence.id, overwrite, withoutNotes)
+              setExportStatus((current) => ({
+                exists: current?.exists || false,
+                fileName: current?.fileName || '',
+                filePath: current?.filePath || '',
+                withoutNotesExists: current?.withoutNotesExists || false,
+                withoutNotesFileName: current?.withoutNotesFileName || '',
+                withoutNotesFilePath: current?.withoutNotesFilePath || '',
+                ...(withoutNotes
+                  ? {
+                      withoutNotesExists: true,
+                      withoutNotesFileName: result.fileName,
+                      withoutNotesFilePath: result.filePath,
+                    }
+                  : {
+                      exists: true,
+                      fileName: result.fileName,
+                      filePath: result.filePath,
+                    }),
+              }))
               return result
             }}
             onOpenDocument={handleOpenDocument}
@@ -432,6 +588,14 @@ function SequenceBuilderPage() {
           />
         </div>
       </div>
+
+      <ConfirmDeleteSequenceModal
+        open={deleteModalOpen}
+        sequenceTitle={sequence.title}
+        loading={deleting}
+        onCancel={() => setDeleteModalOpen(false)}
+        onConfirm={handleConfirmDeleteSequence}
+      />
     </div>
   )
 }

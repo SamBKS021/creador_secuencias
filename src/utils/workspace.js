@@ -16,7 +16,12 @@ export function getSongCategories(sourceValue) {
   return source
     .map((category) => String(category || '').trim())
     .filter(Boolean)
-    .filter((category, index, collection) => collection.indexOf(category) === index)
+    .reduce((acc, category) => {
+      if (!acc.some((item) => item.toLowerCase() === category.toLowerCase())) {
+        acc.push(category)
+      }
+      return acc
+    }, [])
 }
 
 export function buildStats(songs, sequences) {

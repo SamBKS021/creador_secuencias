@@ -32,17 +32,24 @@ function ShutdownSyncModal({ open }) {
 }
 
 function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onInstallNow, onOpenDetails }) {
-  const [doNotShowAgain, setDoNotShowAgain] = useState(false)
-
-  useEffect(() => {
-    if (!open) {
-      setDoNotShowAgain(false)
-    }
-  }, [open])
-
   if (!open || !updateStatus.available) {
     return null
   }
+
+  return (
+    <UpdatePendingModalBody
+      key={updateStatus.latestVersion || 'pending'}
+      updateStatus={updateStatus}
+      onClose={onClose}
+      onDismissForever={onDismissForever}
+      onInstallNow={onInstallNow}
+      onOpenDetails={onOpenDetails}
+    />
+  )
+}
+
+function UpdatePendingModalBody({ updateStatus, onClose, onDismissForever, onInstallNow, onOpenDetails }) {
+  const [doNotShowAgain, setDoNotShowAgain] = useState(false)
 
   function handleLater() {
     if (doNotShowAgain) {
@@ -56,6 +63,7 @@ function UpdatePendingModal({ open, updateStatus, onClose, onDismissForever, onI
   return (
     <ModalShell
       zIndex="z-[245]"
+      onClose={onClose}
       panelClassName="w-full max-w-2xl rounded-[28px] bg-[var(--surface-container-lowest)] px-6 py-7 shadow-[var(--modal-shadow)]"
     >
         <p className="font-headline text-xs font-bold uppercase tracking-[0.28em] text-[var(--outline)]">

@@ -2,7 +2,16 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import SequenceItemCard from './SequenceItemCard.jsx'
 
-function SequenceList({ items, pageOffset = 0, totalItems = 0, songs, onDragEnd, onRemove, onMove }) {
+function SequenceList({
+  items,
+  pageOffset = 0,
+  totalItems = 0,
+  songs,
+  onDragEnd,
+  onRemove,
+  onMove,
+  onChangeTransition,
+}) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -30,6 +39,7 @@ function SequenceList({ items, pageOffset = 0, totalItems = 0, songs, onDragEnd,
                 song={songs.find((song) => song.id === item.songId)}
                 onRemove={onRemove}
                 onMove={onMove}
+                onChangeTransition={onChangeTransition}
                 canMoveUp={absoluteIndex > 0}
                 canMoveDown={absoluteIndex < totalItems - 1}
               />

@@ -75,14 +75,7 @@ function SequencesPage() {
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredSequences.length / PAGE_SIZE));
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, state.sequences]);
-
-  useEffect(() => {
-    setPage((current) => Math.min(current, totalPages));
-  }, [totalPages]);
+  const currentPage = Math.min(page, totalPages);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,12 +100,12 @@ function SequencesPage() {
     return () => {
       cancelled = true;
     };
-  }, [state.sequences]);
+  }, [state.sequences, actions]);
 
   const paginatedSequences = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (currentPage - 1) * PAGE_SIZE;
     return filteredSequences.slice(start, start + PAGE_SIZE);
-  }, [filteredSequences, page]);
+  }, [filteredSequences, currentPage]);
 
   function handleCreateNew() {
     actions.setActiveSequence(NEW_SEQUENCE_ID);
@@ -124,9 +117,9 @@ function SequencesPage() {
     navigate("/constructor-secuencias");
   }
 
-  async function handleOpenDocument(sequenceId) {
+  async function handleOpenDocument(sequenceId, withoutNotes = false) {
     try {
-      await actions.openExportedSequence(sequenceId);
+      await actions.openExportedSequence(sequenceId, withoutNotes);
     } catch (error) {
       sileo.error({
         title: "No se pudo abrir el documento",
@@ -174,7 +167,10 @@ function SequencesPage() {
             className="w-full rounded-2xl bg-[var(--surface-container-low)] px-4 py-3 outline-none lg:max-w-md"
             placeholder="Buscar por título o fecha del servicio..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
           />
         </div>
 
@@ -202,12 +198,24 @@ function SequencesPage() {
                       {exportStatus?.exists ? (
                         <button
                           type="button"
-                          onClick={() => handleOpenDocument(sequence.id)}
+                          onClick={() => handleOpenDocument(sequence.id, false)}
                           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(67,71,78,0.16)] bg-[var(--surface-container-lowest)] text-[var(--primary)] transition hover:border-[var(--primary)]"
                           aria-label="Abrir documento Word"
                           title="Abrir documento Word"
                         >
                           <FaFileWord size={18} />
+                        </button>
+                      ) : null}
+                      {exportStatus?.withoutNotesExists ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDocument(sequence.id, true)}
+                          className="inline-flex h-11 items-center justify-center gap-1.5 rounded-2xl border border-[rgba(67,71,78,0.16)] bg-[var(--surface-container-lowest)] px-3 text-xs font-bold text-[var(--primary)] transition hover:border-[var(--primary)]"
+                          aria-label="Abrir documento sin notas"
+                          title="Abrir documento sin notas"
+                        >
+                          <FileText size={15} />
+                          Sin notas
                         </button>
                       ) : null}
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-container-lowest)] text-[var(--primary)]">
@@ -238,7 +246,9 @@ function SequencesPage() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm text-[var(--on-surface-variant)]">
                       <FileText size={16} />
-                      {exportStatus?.exists ? "Lista para editar, exportar y abrir" : "Lista para editar y exportar"}
+                      {exportStatus?.exists || exportStatus?.withoutNotesExists
+                        ? "Lista para editar, exportar y abrir"
+                        : "Lista para editar y exportar"}
                     </div>
                     <Button variant="outline" onClick={() => handleEditSequence(sequence.id)}>
                       <PencilLine size={16} />
@@ -261,7 +271,7 @@ function SequencesPage() {
           />
         )}
 
-        <CompactPagination page={page} totalPages={totalPages} onChange={setPage} />
+        <CompactPagination page={currentPage} totalPages={totalPages} onChange={setPage} />
       </EditorialCard>
     </div>
   );

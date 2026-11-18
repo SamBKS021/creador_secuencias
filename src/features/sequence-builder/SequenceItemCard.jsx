@@ -1,30 +1,18 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChartColumn, ChevronDown, ChevronUp, GripVertical, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import ModalShell from "../../components/ui/ModalShell.jsx";
 import SongUsageChart from "../library/SongUsageChart.jsx";
 
 function SongUsageModal({ song, onClose }) {
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
-
   return createPortal(
     <ModalShell
       className="overflow-y-auto py-6"
       panelClassName="relative w-full max-w-3xl rounded-[28px] bg-[var(--surface-container-lowest)] p-6 shadow-[var(--card-shadow)]"
       onClose={onClose}
+      ariaLabel={`Uso del canto ${song?.title || ""}`}
     >
       <button
         type="button"
@@ -47,7 +35,17 @@ function SongUsageModal({ song, onClose }) {
   );
 }
 
-function SequenceItemCard({ item, song, index, motionDelay = 0, onRemove, onMove, canMoveUp, canMoveDown }) {
+function SequenceItemCard({
+  item,
+  song,
+  index,
+  motionDelay = 0,
+  onRemove,
+  onMove,
+  onChangeTransition,
+  canMoveUp,
+  canMoveDown,
+}) {
   const [usageModalOpen, setUsageModalOpen] = useState(false);
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -128,9 +126,20 @@ function SequenceItemCard({ item, song, index, motionDelay = 0, onRemove, onMove
               {[song?.author || "Autor sin registrar", song?.key || "Sin tonalidad", `${song?.tempo || "--"} BPM`].join(" · ")}
             </p>
 
-            <span className="inline-flex rounded-full bg-[var(--secondary-container)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--primary)]">
-              {item.transitionType || "Transición libre"}
-            </span>
+            {onChangeTransition ? (
+              <input
+                type="text"
+                aria-label={`Transición de ${song?.title || "canto"}`}
+                className="w-full max-w-[220px] rounded-full bg-[var(--secondary-container)] px-3 py-1 text-[11px] font-bold tracking-[0.06em] text-[var(--primary)] outline-none transition focus:ring-2 focus:ring-[var(--primary)]"
+                placeholder="Transición libre"
+                value={item.transitionType || ""}
+                onChange={(event) => onChangeTransition(item.id, event.target.value)}
+              />
+            ) : (
+              <span className="inline-flex rounded-full bg-[var(--secondary-container)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--primary)]">
+                {item.transitionType || "Transición libre"}
+              </span>
+            )}
           </div>
         </div>
 

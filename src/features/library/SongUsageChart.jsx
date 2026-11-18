@@ -1,4 +1,17 @@
+import { useMemo, useState } from 'react'
+
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+function extractAvailableYears(fechasUso, currentYear) {
+  const years = new Set([currentYear])
+  ;(Array.isArray(fechasUso) ? fechasUso : []).forEach((fechaUso) => {
+    const match = String(fechaUso || '').match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (match) {
+      years.add(Number(match[1]))
+    }
+  })
+  return Array.from(years).sort((left, right) => right - left)
+}
 
 function calcularUsoAnual(fechasUso, year = new Date().getFullYear()) {
   const usosPorMes = Array(12).fill(0)
@@ -19,8 +32,14 @@ function calcularUsoAnual(fechasUso, year = new Date().getFullYear()) {
 }
 
 function SongUsageChart({ fechasUso }) {
-  const year = new Date().getFullYear()
-  const usosPorMes = calcularUsoAnual(fechasUso, year)
+  const currentYear = new Date().getFullYear()
+  const availableYears = useMemo(
+    () => extractAvailableYears(fechasUso, currentYear),
+    [fechasUso, currentYear],
+  )
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const activeYear = availableYears.includes(selectedYear) ? selectedYear : availableYears[0]
+  const usosPorMes = calcularUsoAnual(fechasUso, activeYear)
   const total = usosPorMes.reduce((sum, value) => sum + value, 0)
   const maxUso = Math.max(1, ...usosPorMes)
   const activeMonths = usosPorMes.filter(Boolean).length
@@ -30,7 +49,28 @@ function SongUsageChart({ fechasUso }) {
       <div className="flex items-start justify-between gap-6">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--outline)]">Uso anual</p>
-          <h4 className="font-headline mt-2 text-3xl font-extrabold text-[var(--primary)]">{year}</h4>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h4 className="font-headline text-3xl font-extrabold text-[var(--primary)]">{activeYear}</h4>
+            {availableYears.length > 1 ? (
+              <div className="flex flex-wrap items-center gap-1">
+                {availableYears.map((yearOption) => (
+                  <button
+                    key={yearOption}
+                    type="button"
+                    onClick={() => setSelectedYear(yearOption)}
+                    className={[
+                      'rounded-lg px-2 py-1 text-xs font-bold transition',
+                      yearOption === activeYear
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-[var(--surface-container-lowest)] text-[var(--on-surface-variant)] hover:text-[var(--primary)]',
+                    ].join(' ')}
+                  >
+                    {yearOption}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3 text-right">
           <div>
@@ -66,7 +106,7 @@ function SongUsageChart({ fechasUso }) {
 
       {!total ? (
         <p className="mt-5 rounded-2xl bg-[var(--surface-container-lowest)] px-4 py-3 text-sm text-[var(--on-surface-variant)]">
-          Sin usos registrados este ano.
+          Sin usos registrados en {activeYear}.
         </p>
       ) : null}
     </section>

@@ -183,10 +183,6 @@ pub fn resolve_sync_conflict(app: &AppHandle, payload: &ResolveConflictPayload) 
     })
 }
 
-pub fn try_sync_on_lifecycle(app: &AppHandle, reason: &str) {
-    let _ = sync_workspace_now(app, reason, "merge");
-}
-
 fn run_merge_sync(
     access_token: &str,
     paths: &crate::workspace::WorkspacePaths,
@@ -326,7 +322,7 @@ fn run_force_push_sync(
         }
 
         if !remote_entry.file_id.is_empty() {
-            let _ = delete_remote_file(access_token, &remote_entry.file_id);
+            delete_remote_file(access_token, &remote_entry.file_id)?;
         }
 
         upsert_remote_manifest_entry(
@@ -408,7 +404,7 @@ fn run_force_pull_sync(
             continue;
         }
 
-        let local_path = local_path_for_logical_key(paths, &local_entry.logical_key);
+        let local_path = local_path_for_logical_key(paths, &local_entry.logical_key)?;
         if local_path.exists() {
             fs::remove_file(local_path)?;
             applied_downloads += 1;
@@ -481,7 +477,7 @@ fn upload_local_change(
     if !local.deleted_at.is_empty() {
         if let Some(remote) = remote {
             if !remote.file_id.is_empty() {
-                let _ = delete_remote_file(access_token, &remote.file_id);
+                delete_remote_file(access_token, &remote.file_id)?;
             }
         }
         upsert_remote_manifest_entry(
@@ -494,7 +490,7 @@ fn upload_local_change(
         return Ok(true);
     }
 
-    let path = local_path_for_logical_key(paths, logical_key);
+    let path = local_path_for_logical_key(paths, logical_key)?;
     let bytes = fs::read(path)?;
     let existing_file_id = remote.and_then(|entry| (!entry.file_id.is_empty()).then_some(entry.file_id.as_str()));
     let file_id = upload_logical_file(access_token, logical_key, existing_file_id, &bytes)?;
@@ -518,7 +514,7 @@ fn apply_remote_change(
         return Ok(false);
     };
 
-    let path = local_path_for_logical_key(paths, logical_key);
+    let path = local_path_for_logical_key(paths, logical_key)?;
     if !remote.deleted_at.is_empty() {
         if path.exists() {
             fs::remove_file(path)?;

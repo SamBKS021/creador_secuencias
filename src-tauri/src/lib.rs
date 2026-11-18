@@ -53,7 +53,6 @@ pub fn run() {
             commands::bootstrap_app,
             commands::pick_support_attachments,
             commands::send_support_request,
-            commands::open_song_files,
             commands::import_song_docx_batch,
             commands::save_song,
             commands::update_song,

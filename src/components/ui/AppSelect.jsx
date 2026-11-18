@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 function normalizeOptions(options) {
   return options.map((option) => {
@@ -22,11 +22,16 @@ function AppSelect({
   disabled = false,
   tone = 'surface',
   className = '',
+  ariaLabel,
 }) {
   const [open, setOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const rootRef = useRef(null)
+  const triggerRef = useRef(null)
+  const listboxId = useId()
   const normalizedOptions = useMemo(() => normalizeOptions(options), [options])
-  const selectedOption = normalizedOptions.find((option) => option.value === value)
+  const selectedIndex = normalizedOptions.findIndex((option) => option.value === value)
+  const selectedOption = selectedIndex >= 0 ? normalizedOptions[selectedIndex] : undefined
 
   useEffect(() => {
     if (!open) {
@@ -45,11 +50,73 @@ function AppSelect({
     }
   }, [open])
 
+  function openMenu() {
+    if (disabled) {
+      return
+    }
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0)
+    setOpen(true)
+  }
+
+  function handleKeyDown(event) {
+    if (disabled || !normalizedOptions.length) {
+      return
+    }
+
+    if (!open) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        openMenu()
+      }
+      return
+    }
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault()
+        setHighlightedIndex((current) => (current + 1) % normalizedOptions.length)
+        break
+      case 'ArrowUp':
+        event.preventDefault()
+        setHighlightedIndex((current) => (current <= 0 ? normalizedOptions.length - 1 : current - 1))
+        break
+      case 'Home':
+        event.preventDefault()
+        setHighlightedIndex(0)
+        break
+      case 'End':
+        event.preventDefault()
+        setHighlightedIndex(normalizedOptions.length - 1)
+        break
+      case 'Enter':
+      case ' ':
+        event.preventDefault()
+        if (highlightedIndex >= 0 && normalizedOptions[highlightedIndex]) {
+          onChange(normalizedOptions[highlightedIndex].value)
+        }
+        setOpen(false)
+        triggerRef.current?.focus()
+        break
+      case 'Escape':
+        event.preventDefault()
+        setOpen(false)
+        triggerRef.current?.focus()
+        break
+      default:
+        break
+    }
+  }
+
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative" onKeyDown={handleKeyDown}>
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-label={ariaLabel}
         className={[
           'flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left transition outline-none',
           tone === 'white'
@@ -60,8 +127,10 @@ function AppSelect({
           className,
         ].join(' ')}
         onClick={() => {
-          if (!disabled) {
-            setOpen((current) => !current)
+          if (open) {
+            setOpen(false)
+          } else {
+            openMenu()
           }
         }}
       >
@@ -77,23 +146,30 @@ function AppSelect({
 
       {open ? (
         <div className="absolute left-0 right-0 top-[calc(100%+0.55rem)] z-30 overflow-hidden rounded-[20px] border border-[rgba(67,71,78,0.12)] bg-[var(--surface-container-lowest)] shadow-[0_24px_44px_-26px_rgba(0,24,49,0.45)]">
-          <div className="max-h-72 overflow-y-auto p-2">
-            {normalizedOptions.map((option) => {
+          <div id={listboxId} role="listbox" className="max-h-72 overflow-y-auto p-2">
+            {normalizedOptions.map((option, index) => {
               const selected = option.value === value
+              const highlighted = index === highlightedIndex
 
               return (
                 <button
                   key={option.value}
                   type="button"
+                  role="option"
+                  aria-selected={selected}
                   className={[
                     'flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left text-sm transition',
                     selected
                       ? 'bg-[rgba(31,111,235,0.10)] font-semibold text-[var(--primary)]'
-                      : 'text-[var(--on-surface)] hover:bg-[var(--surface-container-low)]',
+                      : highlighted
+                        ? 'bg-[var(--surface-container-low)] text-[var(--on-surface)]'
+                        : 'text-[var(--on-surface)] hover:bg-[var(--surface-container-low)]',
                   ].join(' ')}
+                  onMouseEnter={() => setHighlightedIndex(index)}
                   onClick={() => {
                     onChange(option.value)
                     setOpen(false)
+                    triggerRef.current?.focus()
                   }}
                 >
                   <span className="truncate">{option.label}</span>

@@ -64,7 +64,7 @@ function VistaImportarDocumentos({ onBrowse, disabled }) {
   return <UploadDropzone onBrowse={onBrowse} blendySourceId={BLENDY_ID} disabled={disabled} />;
 }
 
-function VistaAltaManual({ form, categories, onChange, onSubmit }) {
+function VistaAltaManual({ form, categories, saving, onChange, onSubmit }) {
   return (
     <DraftEditor
       title="Nuevo canto"
@@ -73,7 +73,8 @@ function VistaAltaManual({ form, categories, onChange, onSubmit }) {
       categories={categories}
       onChange={onChange}
       onSubmit={onSubmit}
-      submitLabel="Guardar canto"
+      submitLabel={saving ? "Guardando..." : "Guardar canto"}
+      submitDisabled={saving}
     />
   );
 }
@@ -85,16 +86,23 @@ function UploadPage() {
   const songCategories = useMemo(() => getSongCategories(state.songCategories), [state.songCategories]);
   const defaultCategory = songCategories[0] || "Contemporánea";
   const [form, setForm] = useState(() => createEmptySong({ category: defaultCategory }));
+  const [savingManual, setSavingManual] = useState(false);
   const [reviewState, setReviewState] = useState({
     open: false,
     items: [],
     currentIndex: 0,
     saving: false
   });
+  const motionEnabled = state.preferences.motionMode !== "off";
 
   useEffect(() => {
+    if (!motionEnabled) {
+      blendyRef.current = null;
+      return;
+    }
+
     blendyRef.current = createBlendy({ animation: "dynamic" });
-  }, []);
+  }, [motionEnabled]);
 
   useEffect(() => {
     if (!reviewState.open) {
@@ -141,6 +149,10 @@ function UploadPage() {
       saving: false
     });
 
+    if (!motionEnabled) {
+      return;
+    }
+
     requestAnimationFrame(() => {
       blendyRef.current?.update();
       requestAnimationFrame(() => {
@@ -163,7 +175,7 @@ function UploadPage() {
       return;
     }
 
-    if (blendyRef.current) {
+    if (motionEnabled && blendyRef.current) {
       blendyRef.current.untoggle(BLENDY_ID, reset);
       return;
     }
@@ -237,11 +249,19 @@ function UploadPage() {
   }
 
   async function handleSaveReviewItem() {
-    if (!currentReviewItem) {
+    if (!currentReviewItem || reviewState.saving) {
       return;
     }
 
     const { form: reviewForm, initialForm, candidate } = currentReviewItem;
+    if (!String(reviewForm.title || "").trim()) {
+      sileo.warning({
+        title: "Falta el título",
+        description: "Escribe un título antes de guardar este canto."
+      });
+      return;
+    }
+
     const editedLyrics = normalizeMultiline(reviewForm.lyrics) !== normalizeMultiline(initialForm.lyrics);
 
     setReviewState((current) => ({
@@ -275,7 +295,7 @@ function UploadPage() {
   }
 
   async function handleOverwriteReviewItem() {
-    if (!currentReviewItem?.candidate?.matchedSongId) {
+    if (!currentReviewItem?.candidate?.matchedSongId || reviewState.saving) {
       return;
     }
 
@@ -290,6 +310,14 @@ function UploadPage() {
     }
 
     const { form: reviewForm, initialForm, candidate } = currentReviewItem;
+    if (!String(reviewForm.title || "").trim()) {
+      sileo.warning({
+        title: "Falta el título",
+        description: "Escribe un título antes de sobrescribir este canto."
+      });
+      return;
+    }
+
     const editedLyrics = normalizeMultiline(reviewForm.lyrics) !== normalizeMultiline(initialForm.lyrics);
 
     setReviewState((current) => ({
@@ -351,6 +379,37 @@ function UploadPage() {
     consumeCurrentReviewItem();
   }
 
+  async function handleSaveManualSong() {
+    if (savingManual) {
+      return;
+    }
+
+    if (!String(form.title || "").trim()) {
+      sileo.warning({
+        title: "Falta el título",
+        description: "Escribe un título para el canto antes de guardarlo."
+      });
+      return;
+    }
+
+    setSavingManual(true);
+    try {
+      await actions.saveSong(form);
+      sileo.success({
+        title: "Canto guardado",
+        description: `${form.title.trim()} ya está disponible en la biblioteca.`
+      });
+      setForm(createEmptySong({ category: defaultCategory }));
+    } catch (error) {
+      sileo.error({
+        title: "No se pudo guardar el canto",
+        description: error?.message || "Revisa los datos del canto e inténtalo de nuevo."
+      });
+    } finally {
+      setSavingManual(false);
+    }
+  }
+
   if (!state.workspaceRoot) {
     return (
       <EmptyState
@@ -375,11 +434,9 @@ function UploadPage() {
           <VistaAltaManual
             form={form}
             categories={songCategories}
+            saving={savingManual}
             onChange={setForm}
-            onSubmit={async () => {
-              await actions.saveSong(form);
-              setForm(createEmptySong({ category: defaultCategory }));
-            }}
+            onSubmit={handleSaveManualSong}
           />
         )}
       </div>

@@ -100,10 +100,6 @@ export function closeMainWindow() {
   return invoke('close_main_window')
 }
 
-export function openSongFiles() {
-  return invoke('open_song_files')
-}
-
 export function importSongDocxBatch() {
   return invoke('import_song_docx_batch')
 }
@@ -114,7 +110,7 @@ export function saveSong(payload) {
     payload: {
       song: {
         ...song,
-        chords: '',
+        chords: song.chords || '',
       },
       draftId: draftId || null,
       contentDraft: contentDraft || null,
@@ -128,7 +124,7 @@ export function updateSong(payload) {
     payload: {
       song: {
         ...song,
-        chords: '',
+        chords: song.chords || '',
       },
       draftId: draftId || null,
       contentDraft: contentDraft || null,
@@ -148,20 +144,20 @@ export function deleteSong(songId) {
   return invoke('delete_song', { songId })
 }
 
-export function checkSequenceExportDocx(sequenceId) {
-  return invoke('check_sequence_docx_export', { sequenceId })
+export function checkSequenceExportDocx(sequenceId, withoutNotes = false) {
+  return invoke('check_sequence_docx_export', { sequenceId, withoutNotes })
 }
 
 export function getSequenceExportStatuses() {
   return invoke('get_sequence_export_statuses')
 }
 
-export function openExportedSequenceDocx(sequenceId) {
-  return invoke('open_exported_sequence_docx', { sequenceId })
+export function openExportedSequenceDocx(sequenceId, withoutNotes = false) {
+  return invoke('open_exported_sequence_docx', { sequenceId, withoutNotes })
 }
 
-export function exportSequenceDocx(sequenceId, overwrite = false) {
-  return invoke('export_sequence_docx', { sequenceId, overwrite })
+export function exportSequenceDocx(sequenceId, overwrite = false, withoutNotes = false) {
+  return invoke('export_sequence_docx', { sequenceId, overwrite, withoutNotes })
 }
 
 export function openExportsFolder() {

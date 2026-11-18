@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sileo'
-import { AppProvider } from './app/store/AppContext.jsx'
+import { AppProvider, useAppContext } from './app/store/AppContext.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import LibraryPage from './pages/LibraryPage.jsx'
@@ -16,11 +16,17 @@ import SettingsPage from './pages/SettingsPage.jsx'
 import SupportPage from './pages/SupportPage.jsx'
 import UploadPage from './pages/UploadPage.jsx'
 
+function ThemedToaster() {
+  const { state } = useAppContext()
+  const theme = state.preferences.themeMode === 'dark' ? 'dark' : 'light'
+  return <Toaster position="top-right" theme={theme} />
+}
+
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <Toaster position="top-right" theme="light" />
+        <ThemedToaster />
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />

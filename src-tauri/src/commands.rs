@@ -9,29 +9,42 @@ use crate::drive_auth::{
     get_drive_auth_status as load_drive_auth_status,
 };
 use crate::errors::AppResult;
-use crate::export::{export_sequence_docx as build_docx_export, export_sequence_docx_path};
-use crate::importer::{import_docx_batch, normalize_title};
+use crate::export::{export_sequence_docx as build_docx_export, export_sequence_docx_path_with_options};
+use crate::importer::import_docx_batch;
 use crate::models::{
-    AppUpdateStatus, Draft, DraftResult, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult,
-    Preferences, ResolveConflictPayload, Sequence, SequenceExportStatus, SequenceMutationResult, Song,
-    SongMutationResult, SongPayload, SupportConfig, SupportRequestPayload, SupportSubmissionResult, SyncResult,
-    SyncStatus, UpdateNoticeManifest, WorkspaceConfig, WorkspaceSelection,
+    AppUpdateStatus, ExportCheckResult, ExportResult, ImportBatchResult, OperationResult, Preferences,
+    ResolveConflictPayload, Sequence, SequenceExportStatus, SequenceMutationResult, SongMutationResult, SongPayload,
+    SupportConfig, SupportRequestPayload, SupportSubmissionResult, SyncResult, SyncStatus, UpdateNoticeManifest,
+    WorkspaceConfig, WorkspaceSelection,
 };
 use crate::repository::{
-    append_drafts, bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record,
-    export_metadata, load_sequences, load_song_categories, load_songs, resolve_paths, save_song_categories_record,
-    upsert_sequence, upsert_song,
+    bootstrap, delete_sequence as delete_sequence_record, delete_song as delete_song_record, export_metadata,
+    load_sequence_by_id, load_sequences, load_song_categories, load_songs, load_songs_by_ids, resolve_paths,
+    save_song_categories_record, upsert_sequence, upsert_song,
 };
 use crate::support::{
     build_attachment_metadata, get_support_config as load_support_config, send_support_request as dispatch_support_request,
 };
-use crate::sync::{get_sync_status as load_sync_status, resolve_sync_conflict as run_conflict_resolution, sync_workspace_now as run_sync};
+use crate::sync::{
+    get_sync_status as load_sync_status, resolve_sync_conflict as run_conflict_resolution,
+    sync_workspace_now as run_sync,
+};
 use crate::update::{
     check_app_update as load_app_update, dismiss_app_update as dismiss_pending_app_update,
     get_app_version as load_app_version, get_update_notice_manifest as load_update_notice_manifest,
     install_app_update as run_app_update_install,
 };
-use crate::workspace::{ensure_managed_workspace_config, ensure_workspace, read_json, save_config};
+use crate::workspace::{ensure_managed_workspace_config, ensure_workspace, save_config};
+
+async fn run_blocking<T, F>(task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|error| error.to_string())?
+}
 
 fn file_path_to_pathbuf(file_path: FilePath) -> Option<PathBuf> {
     file_path.into_path().ok()
@@ -64,8 +77,8 @@ pub fn get_workspace_config(app: AppHandle) -> Result<WorkspaceConfig, String> {
 }
 
 #[tauri::command]
-pub fn get_support_config() -> Result<SupportConfig, String> {
-    Ok(load_support_config())
+pub fn get_support_config(app: AppHandle) -> Result<SupportConfig, String> {
+    Ok(load_support_config(&app))
 }
 
 #[tauri::command]
@@ -78,8 +91,11 @@ pub fn pick_support_attachments(app: AppHandle) -> Result<Vec<crate::models::Sup
 }
 
 #[tauri::command]
-pub fn send_support_request(payload: SupportRequestPayload) -> Result<SupportSubmissionResult, String> {
-    dispatch_support_request(&payload).map_err(|error| error.to_string())
+pub async fn send_support_request(
+    app: AppHandle,
+    payload: SupportRequestPayload,
+) -> Result<SupportSubmissionResult, String> {
+    run_blocking(move || dispatch_support_request(&app, &payload).map_err(|error| error.to_string())).await
 }
 
 #[tauri::command]
@@ -148,81 +164,30 @@ pub fn bootstrap_app(app: AppHandle, workspace_root: String) -> Result<crate::mo
 }
 
 #[tauri::command]
-pub fn open_song_files(app: AppHandle) -> Result<DraftResult, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+pub async fn import_song_docx_batch(app: AppHandle) -> Result<ImportBatchResult, String> {
+    run_blocking(move || {
+        let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+        let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
 
-    let Some(files) = pick_docx_files(&app) else {
-        return Ok(DraftResult {
-            drafts: read_json(&paths.drafts_file).map_err(|error| error.to_string())?,
-        });
-    };
+        let Some(files) = pick_docx_files(&app) else {
+            return Ok(ImportBatchResult {
+                documents: Vec::new(),
+            });
+        };
 
-    let drafts = files
-        .into_iter()
-        .map(|path| {
-            let source_file_name = path
-                .file_name()
-                .map(|item| item.to_string_lossy().to_string())
-                .unwrap_or_else(|| "archivo.docx".into());
-            let suggested_title = source_file_name.trim_end_matches(".docx").replace('_', " ");
-            let created_at = crate::workspace::now_iso();
+        if files.iter().any(|path| {
+            path.extension()
+                .and_then(|extension| extension.to_str())
+                .map(|extension| !extension.eq_ignore_ascii_case("docx"))
+                .unwrap_or(true)
+        }) {
+            return Err("Solo se soportan archivos .docx.".into());
+        }
 
-            Draft {
-                id: uuid::Uuid::new_v4().to_string(),
-                source_file_name: source_file_name.clone(),
-                source_path: path.to_string_lossy().to_string(),
-                suggested_title: suggested_title.clone(),
-                form_data: Song {
-                    id: String::new(),
-                    title: suggested_title.clone(),
-                    title_normalized: normalize_title(&suggested_title),
-                    author: String::new(),
-                    category: "Contemporanea".into(),
-                    key: "C".into(),
-                    tempo: 72,
-                    lyrics: String::new(),
-                    chords: String::new(),
-                    tags: Vec::new(),
-                    source_file_name,
-                    source_path: path.to_string_lossy().to_string(),
-                    status: "draft".into(),
-                    play_count: 0,
-                    fechas_uso: Vec::new(),
-                    created_at: created_at.clone(),
-                    updated_at: created_at.clone(),
-                },
-                created_at,
-            }
-        })
-        .collect::<Vec<_>>();
-
-    let drafts = append_drafts(&paths, drafts).map_err(|error| error.to_string())?;
-    Ok(DraftResult { drafts })
-}
-
-#[tauri::command]
-pub fn import_song_docx_batch(app: AppHandle) -> Result<ImportBatchResult, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-
-    let Some(files) = pick_docx_files(&app) else {
-        return Ok(ImportBatchResult {
-            documents: Vec::new(),
-        });
-    };
-
-    if files.iter().any(|path| {
-        path.extension()
-            .and_then(|extension| extension.to_str())
-            .map(|extension| !extension.eq_ignore_ascii_case("docx"))
-            .unwrap_or(true)
-    }) {
-        return Err("Solo se soportan archivos .docx.".into());
-    }
-
-    let songs = load_songs(&paths).map_err(|error| error.to_string())?;
-    import_docx_batch(&files, &songs).map_err(|error| error.to_string())
+        let songs = load_songs(&paths).map_err(|error| error.to_string())?;
+        import_docx_batch(&files, &songs).map_err(|error| error.to_string())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -263,91 +228,127 @@ pub fn delete_song(app: AppHandle, song_id: String) -> Result<OperationResult, S
 }
 
 #[tauri::command]
-pub fn check_sequence_docx_export(app: AppHandle, sequence_id: String) -> Result<ExportCheckResult, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-    let sequences = load_sequences(&paths).map_err(|error| error.to_string())?;
+pub async fn check_sequence_docx_export(
+    app: AppHandle,
+    sequence_id: String,
+    without_notes: Option<bool>,
+) -> Result<ExportCheckResult, String> {
+    run_blocking(move || {
+        let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+        let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+        let sequence = load_sequence_by_id(&paths, &sequence_id).map_err(|error| error.to_string())?;
 
-    let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
-        return Err("No se encontro la secuencia a exportar.".into());
-    };
+        let file_path = export_sequence_docx_path_with_options(
+            PathBuf::from(&root).as_path(),
+            &sequence,
+            without_notes.unwrap_or(false),
+        );
 
-    let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
-
-    Ok(ExportCheckResult {
-        exists: file_path.exists(),
-        file_path: file_path.to_string_lossy().to_string(),
-        file_name: file_path
-            .file_name()
-            .map(|item| item.to_string_lossy().to_string())
-            .unwrap_or_else(|| "secuencia.docx".into()),
-    })
-}
-
-#[tauri::command]
-pub fn get_sequence_export_statuses(app: AppHandle) -> Result<Vec<SequenceExportStatus>, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-    let sequences = load_sequences(&paths).map_err(|error| error.to_string())?;
-
-    Ok(sequences
-        .into_iter()
-        .map(|sequence| {
-            let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
-            SequenceExportStatus {
-                sequence_id: sequence.id,
-                exists: file_path.exists(),
-                file_path: file_path.to_string_lossy().to_string(),
-                file_name: file_path
-                    .file_name()
-                    .map(|item| item.to_string_lossy().to_string())
-                    .unwrap_or_else(|| "secuencia.docx".into()),
-            }
+        Ok(ExportCheckResult {
+            exists: file_path.exists(),
+            file_path: file_path.to_string_lossy().to_string(),
+            file_name: file_path
+                .file_name()
+                .map(|item| item.to_string_lossy().to_string())
+                .unwrap_or_else(|| "secuencia.docx".into()),
         })
-        .collect())
+    })
+    .await
 }
 
 #[tauri::command]
-pub fn open_exported_sequence_docx(app: AppHandle, sequence_id: String) -> Result<OperationResult, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-    let sequences = load_sequences(&paths).map_err(|error| error.to_string())?;
+pub async fn get_sequence_export_statuses(app: AppHandle) -> Result<Vec<SequenceExportStatus>, String> {
+    run_blocking(move || {
+        let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+        let root_path = PathBuf::from(&root);
+        let paths = ensure_workspace(root_path.as_path()).map_err(|error| error.to_string())?;
+        let sequences = load_sequences(&paths).map_err(|error| error.to_string())?;
 
-    let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
-        return Err("No se encontro la secuencia solicitada.".into());
-    };
-
-    let file_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
-    if !file_path.exists() {
-        return Err("Todavia no existe un documento exportado para esta secuencia.".into());
-    }
-
-    open::that_detached(file_path).map_err(|error| error.to_string())?;
-    Ok(OperationResult { ok: true })
+        Ok(sequences
+            .into_iter()
+            .map(|sequence| {
+                let file_path = export_sequence_docx_path_with_options(root_path.as_path(), &sequence, false);
+                let clean_path = export_sequence_docx_path_with_options(root_path.as_path(), &sequence, true);
+                SequenceExportStatus {
+                    sequence_id: sequence.id,
+                    exists: file_path.exists(),
+                    file_path: file_path.to_string_lossy().to_string(),
+                    file_name: file_path
+                        .file_name()
+                        .map(|item| item.to_string_lossy().to_string())
+                        .unwrap_or_else(|| "secuencia.docx".into()),
+                    without_notes_exists: clean_path.exists(),
+                    without_notes_file_path: clean_path.to_string_lossy().to_string(),
+                    without_notes_file_name: clean_path
+                        .file_name()
+                        .map(|item| item.to_string_lossy().to_string())
+                        .unwrap_or_else(|| "secuencia_sin_notas.docx".into()),
+                }
+            })
+            .collect())
+    })
+    .await
 }
 
 #[tauri::command]
-pub fn export_sequence_docx(app: AppHandle, sequence_id: String, overwrite: bool) -> Result<ExportResult, String> {
-    let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
-    let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
-    let songs = load_songs(&paths).map_err(|error| error.to_string())?;
-    let sequences = load_sequences(&paths).map_err(|error| error.to_string())?;
+pub async fn open_exported_sequence_docx(
+    app: AppHandle,
+    sequence_id: String,
+    without_notes: Option<bool>,
+) -> Result<OperationResult, String> {
+    run_blocking(move || {
+        let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+        let paths = ensure_workspace(PathBuf::from(&root).as_path()).map_err(|error| error.to_string())?;
+        let sequence = load_sequence_by_id(&paths, &sequence_id).map_err(|error| error.to_string())?;
 
-    let Some(sequence) = sequences.into_iter().find(|item| item.id == sequence_id) else {
-        return Err("No se encontro la secuencia a exportar.".into());
-    };
+        let file_path = export_sequence_docx_path_with_options(
+            PathBuf::from(&root).as_path(),
+            &sequence,
+            without_notes.unwrap_or(false),
+        );
+        if !file_path.exists() {
+            return Err("Todavia no existe un documento exportado para esta secuencia.".into());
+        }
 
-    let target_path = export_sequence_docx_path(PathBuf::from(&root).as_path(), &sequence);
-    let already_exists = target_path.exists();
-    if already_exists && !overwrite {
-        return Err("El archivo de exportacion ya existe.".into());
-    }
+        open::that_detached(file_path).map_err(|error| error.to_string())?;
+        Ok(OperationResult { ok: true })
+    })
+    .await
+}
 
-    let file_path =
-        build_docx_export(PathBuf::from(&root).as_path(), &sequence, &songs).map_err(|error| error.to_string())?;
-    open::that_detached(&file_path).map_err(|error| error.to_string())?;
+#[tauri::command]
+pub async fn export_sequence_docx(
+    app: AppHandle,
+    sequence_id: String,
+    overwrite: bool,
+    without_notes: Option<bool>,
+) -> Result<ExportResult, String> {
+    run_blocking(move || {
+        let root = resolve_root_from_config(&app).map_err(|error| error.to_string())?;
+        let root_path = PathBuf::from(&root);
+        let paths = ensure_workspace(root_path.as_path()).map_err(|error| error.to_string())?;
+        let sequence = load_sequence_by_id(&paths, &sequence_id).map_err(|error| error.to_string())?;
+        let song_ids = sequence
+            .items
+            .iter()
+            .map(|item| item.song_id.clone())
+            .collect::<Vec<_>>();
+        let songs = load_songs_by_ids(&paths, &song_ids).map_err(|error| error.to_string())?;
 
-    Ok(export_metadata(&file_path, already_exists))
+        let clean_mode = without_notes.unwrap_or(false);
+        let target_path = export_sequence_docx_path_with_options(root_path.as_path(), &sequence, clean_mode);
+        let already_exists = target_path.exists();
+        if already_exists && !overwrite {
+            return Err("El archivo de exportacion ya existe.".into());
+        }
+
+        let file_path = build_docx_export(root_path.as_path(), &sequence, &songs, clean_mode)
+            .map_err(|error| error.to_string())?;
+        open::that_detached(&file_path).map_err(|error| error.to_string())?;
+
+        Ok(export_metadata(&file_path, already_exists))
+    })
+    .await
 }
 
 #[tauri::command]
@@ -371,8 +372,8 @@ pub fn get_drive_auth_status(app: AppHandle) -> Result<crate::models::DriveAuthS
 }
 
 #[tauri::command]
-pub fn connect_google_drive(app: AppHandle) -> Result<crate::models::DriveAuthStatus, String> {
-    connect_google_drive_account(&app).map_err(|error| error.to_string())
+pub async fn connect_google_drive(app: AppHandle) -> Result<crate::models::DriveAuthStatus, String> {
+    run_blocking(move || connect_google_drive_account(&app).map_err(|error| error.to_string())).await
 }
 
 #[tauri::command]
@@ -386,13 +387,21 @@ pub fn get_sync_status(app: AppHandle) -> Result<SyncStatus, String> {
 }
 
 #[tauri::command]
-pub fn sync_workspace_now(app: AppHandle, reason: String, mode: Option<String>) -> Result<SyncResult, String> {
-    run_sync(&app, &reason, mode.as_deref().unwrap_or("merge")).map_err(|error| error.to_string())
+pub async fn sync_workspace_now(
+    app: AppHandle,
+    reason: String,
+    mode: Option<String>,
+) -> Result<SyncResult, String> {
+    run_blocking(move || run_sync(&app, &reason, mode.as_deref().unwrap_or("merge")).map_err(|error| error.to_string()))
+        .await
 }
 
 #[tauri::command]
-pub fn resolve_sync_conflict(app: AppHandle, payload: ResolveConflictPayload) -> Result<SyncResult, String> {
-    run_conflict_resolution(&app, &payload).map_err(|error| error.to_string())
+pub async fn resolve_sync_conflict(
+    app: AppHandle,
+    payload: ResolveConflictPayload,
+) -> Result<SyncResult, String> {
+    run_blocking(move || run_conflict_resolution(&app, &payload).map_err(|error| error.to_string())).await
 }
 
 #[tauri::command]

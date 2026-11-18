@@ -1,10 +1,13 @@
-use reqwest::blocking::{Client, multipart};
+use std::time::Duration;
+
+use reqwest::blocking::{multipart, Client};
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::errors::{AppError, AppResult};
-use crate::models::{ManifestRecord, OAuthLocalConfig, UpdateNoticeManifest};
+use crate::models::{ManifestRecord, UpdateNoticeManifest};
 use crate::sync_manifest::{remote_file_name_for_logical_key, REMOTE_MANIFEST_NAME};
 
 const DRIVE_FILES_ENDPOINT: &str = "https://www.googleapis.com/drive/v3/files";
@@ -26,6 +29,8 @@ pub struct DriveFile {
 
 fn http_client() -> AppResult<Client> {
     Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
         .build()
         .map_err(|error| AppError::from(error.to_string().as_str()))
 }
@@ -59,7 +64,12 @@ pub fn save_remote_manifest(access_token: &str, file_id: Option<&str>, manifest:
     upsert_json_file(access_token, file_id, REMOTE_MANIFEST_NAME, &body)
 }
 
-pub fn upload_logical_file(access_token: &str, logical_key: &str, existing_file_id: Option<&str>, bytes: &[u8]) -> AppResult<String> {
+pub fn upload_logical_file(
+    access_token: &str,
+    logical_key: &str,
+    existing_file_id: Option<&str>,
+    bytes: &[u8],
+) -> AppResult<String> {
     let remote_name = remote_file_name_for_logical_key(logical_key);
     upsert_json_file(access_token, existing_file_id, &remote_name, bytes)
 }
@@ -70,11 +80,17 @@ pub fn download_logical_file(access_token: &str, file_id: &str) -> AppResult<Vec
 
 pub fn delete_remote_file(access_token: &str, file_id: &str) -> AppResult<()> {
     let client = http_client()?;
-    client
+    let response = client
         .delete(format!("{DRIVE_FILES_ENDPOINT}/{file_id}"))
         .header(AUTHORIZATION, bearer(access_token))
         .send()
-        .map_err(|error| AppError::from(error.to_string().as_str()))?
+        .map_err(|error| AppError::from(error.to_string().as_str()))?;
+
+    if response.status() == StatusCode::NOT_FOUND {
+        return Ok(());
+    }
+
+    response
         .error_for_status()
         .map_err(|error| AppError::from(error.to_string().as_str()))?;
 
@@ -102,33 +118,6 @@ pub fn fetch_account_email(access_token: &str) -> AppResult<String> {
     Ok(user.email)
 }
 
-pub fn list_sync_files(access_token: &str) -> AppResult<Vec<DriveFile>> {
-    let client = http_client()?;
-    let response = client
-        .get(DRIVE_FILES_ENDPOINT)
-        .query(&[
-            ("spaces", "appDataFolder"),
-            ("fields", "files(id,name)"),
-        ])
-        .header(AUTHORIZATION, bearer(access_token))
-        .send()
-        .map_err(|error| AppError::from(error.to_string().as_str()))?
-        .error_for_status()
-        .map_err(|error| AppError::from(error.to_string().as_str()))?
-        .json::<FileListResponse>()
-        .map_err(|error| AppError::from(error.to_string().as_str()))?;
-
-    Ok(response.files)
-}
-
-pub fn oauth_client_from_local(config: &OAuthLocalConfig) -> Option<(String, String)> {
-    if config.client_id.is_empty() || config.client_secret.is_empty() {
-        return None;
-    }
-
-    Some((config.client_id.clone(), config.client_secret.clone()))
-}
-
 fn find_file_by_name(access_token: &str, name: &str) -> AppResult<Option<DriveFile>> {
     let client = http_client()?;
     let escaped_name = name.replace('\'', "\\'");
@@ -152,7 +141,12 @@ fn find_file_by_name(access_token: &str, name: &str) -> AppResult<Option<DriveFi
     Ok(response.files.into_iter().next())
 }
 
-fn upsert_json_file(access_token: &str, file_id: Option<&str>, remote_name: &str, bytes: &[u8]) -> AppResult<String> {
+fn upsert_json_file(
+    access_token: &str,
+    file_id: Option<&str>,
+    remote_name: &str,
+    bytes: &[u8],
+) -> AppResult<String> {
     let client = http_client()?;
     let metadata = if file_id.is_some() {
         json!({ "name": remote_name })
@@ -163,11 +157,15 @@ fn upsert_json_file(access_token: &str, file_id: Option<&str>, remote_name: &str
     let form = multipart::Form::new()
         .part(
             "metadata",
-            multipart::Part::bytes(serde_json::to_vec(&metadata)?).mime_str("application/json").map_err(|error| AppError::from(error.to_string().as_str()))?,
+            multipart::Part::bytes(serde_json::to_vec(&metadata)?)
+                .mime_str("application/json")
+                .map_err(|error| AppError::from(error.to_string().as_str()))?,
         )
         .part(
             "media",
-            multipart::Part::bytes(bytes.to_vec()).mime_str("application/json").map_err(|error| AppError::from(error.to_string().as_str()))?,
+            multipart::Part::bytes(bytes.to_vec())
+                .mime_str("application/json")
+                .map_err(|error| AppError::from(error.to_string().as_str()))?,
         );
 
     let request = if let Some(file_id) = file_id {
